@@ -52,4 +52,4 @@ Both projects currently run against no real database — the Supabase CLI and a 
 
 ## Status
 
-Sprint 1 (Stack Reset & Project Foundation) is in progress. See `docs/Revnara_Sprint_Development_Plan.md` for what's next.
+Sprint 1 and Sprint 1.5 (Stack Reset, Design System & Motion Foundation) are complete. Visit `/dev/gallery` in the running `desktop` app to see the full component library (light/dark). Sprint 2 (Identity & Tenancy Backend) is next — see `docs/Revnara_Sprint_Development_Plan.md`.
