@@ -1,0 +1,14 @@
+{
+  "name": "revnara",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Revnara - governed AI for software-house business development.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
+

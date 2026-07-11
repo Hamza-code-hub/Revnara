@@ -1,0 +1,69 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/flutter-ci.yml"
+  pull_request:
+    paths:
+      - "desktop/**"
+      - ".github/workflows/flutter-ci.yml"
+
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: desktop
+
+env:
+  FLUTTER_VERSION: "3.41.6"
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  # Cross-platform build matrix (§2.7 performance budgets / cross-platform DoD).
+  # iOS/Android lanes are added in Sprint 15.5 once those platforms are enabled.
+  build-matrix:
+    needs: analyze-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: web
+            build-cmd: flutter build web
+          - os: windows-latest
+            target: windows
+            build-cmd: flutter build windows
+          - os: macos-latest
+            target: macos
+            build-cmd: flutter build macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: ${{ matrix.build-cmd }}
