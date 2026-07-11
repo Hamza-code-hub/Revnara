@@ -221,11 +221,10 @@ revnara/
 │   │   └── workers/
 │   └── evals/                        # Offline agent evaluation harness
 │
-├── supabase/
-│   ├── migrations/                   # Supabase-managed SQL (or mirrors Alembic output)
+├── supabase/                          # NOT the schema source of truth — see below
 │   ├── rls/                          # RLS policy SQL, organized by table
 │   ├── seeds/                        # Local/staging seed data
-│   └── config/
+│   └── config/                       # Supabase CLI project linking, Auth/Storage platform config
 │
 ├── infrastructure/
 │   ├── docker/                       # Dockerfile(s), docker-compose for local dev
@@ -241,6 +240,10 @@ revnara/
 ```
 
 Existing root-level planning docs (`Revnara_Implementation_Plan.md`, `BDOS_*.md`, this file) move into `docs/` in Sprint 1 per the Phase 0 task list, with `README.md` staying at root.
+
+**One schema source of truth:** `backend/migrations/` (Alembic) is the only place table schema is defined and changed — there is deliberately no separate `supabase/migrations/`, since running two migration tools against the same database invites drift. Alembic runs directly against the Supabase project's Postgres connection string; "managed" doesn't change how migrations work. `supabase/` holds RLS policy SQL, seed data, and Supabase-platform config (Auth/Storage settings, CLI project linking) — governance and platform concerns, not schema DDL. Corrected during Sprint 1 implementation; see `supabase/README.md`.
+
+**Repo root = project root, no redundant nesting.** The `revnara/` label at the top of the tree above represents *the repository root itself*, not a subfolder to create inside the repo. When this repo is cloned from GitHub, the checkout folder is already named after the repo (`Revnara/`) — nesting another `Revnara/` folder one level inside would just duplicate that. `desktop/`, `backend/`, `docs/`, etc. sit directly at the repo root, same as any standard monorepo (e.g. this is how large real-world monorepos like `facebook/react` or `microsoft/vscode` are laid out — no repo-named folder inside the repo).
 
 ---
 
@@ -420,6 +423,8 @@ Sprint 1 complete (`desktop/` app shell exists and runs).
 | DS1.5 | `motion/transitions.dart`: GoRouter page-transition builder (shared-axis or fade-through, applied consistently across all routes), reusable entrance/exit animation widgets | FE |
 | DS1.6 | Core component library: buttons (primary/secondary/destructive), text/select inputs, cards, list/table rows, badges (risk tier, capability status, evidence-cited vs. assumption — these will be used starting Sprint 7 and Sprint 9), empty states, loading skeletons, toasts/snackbars — every component animated per DS1.4's motion tokens, no bespoke one-off styling | FE |
 | DS1.7 | Reduced-motion support: every animation in `motion/` checks `MediaQuery.of(context).disableAnimations` (or platform equivalent) and collapses to instant/near-instant when set | FE |
+| DS1.9 | **Adaptive layout system** (`desktop/lib/shared/design_system/layout/`): named breakpoints (e.g. compact <600, medium 600–1024, expanded >1024, matching Material 3 window-size classes so mobile in Sprint 15.5 falls out of the same system rather than needing a separate one) and a `Breakpoint.of(context)` helper built on `LayoutBuilder`/`MediaQuery`. Every component from DS1.6 and every future screen sizes itself relative to available space (`Expanded`/`Flexible`/`FractionallySizedBox`/responsive grids) rather than a fixed pixel size — a fixed-size panel with internal scrollbars is the thing being explicitly avoided here, not a fallback to reach for when a layout doesn't fit | FE |
+| DS1.10 | Two reference layouts built against DS1.9 and added to the component gallery (DS1.8): a list/detail screen (used by every Sprint 6+ opportunity/proposal/approval screen) and a form screen — each shown at compact, medium, and expanded width in the gallery so the pattern is visible and copyable before Sprint 2 builds the first real screen against it | FE |
 | DS1.8 | `dev/component_gallery.dart`: a single debug screen exercising every component and animation state, for design review and as the target of golden tests | FE |
 
 ### Testing Tasks
@@ -427,10 +432,12 @@ Sprint 1 complete (`desktop/` app shell exists and runs).
 - **Accessibility:** automated contrast-ratio check on the token palette (WCAG AA minimum); manual screen-reader pass over the component gallery.
 - **Motion/reduced-motion:** test that toggling the OS/platform reduce-motion flag measurably shortens or removes transition durations (assert on `AnimationController.duration` or transition widget state, not just visually).
 - **Performance:** component gallery screen sustains 60fps through every animation with no dropped frames (per §2.7's Flutter budget) — this is the first sprint §2.7 actually gets exercised against.
+- **Adaptive layout:** each DS1.10 reference layout is tested (via `flutter_test`'s `tester.view.physicalSize`, not just eyeballed) at a compact width (e.g. 375px, phone-class), a medium width (e.g. 800px, tablet/split-view), and an expanded width (e.g. 1440px, desktop) — content reflows and widgets resize at each; no test asserts a fixed pixel width on any container that should adapt, and no reference layout requires horizontal scrolling at any tested width. This is the regression anchor for "no fixed-size scrollbars" going forward.
 - **Manual design review:** TL + DES (if available) sign off on the identity direction and component set before Sprint 2 starts building real screens against it.
 
 ### Definition of Done
 - [ ] Design tokens, light/dark theme, and motion primitives exist, are documented in `docs/design/`, and are implemented in `desktop/lib/shared/`.
+- [ ] The adaptive layout system (breakpoints + reference list/detail and form layouts) is in place and demonstrated at compact, medium, and expanded widths with no horizontal scrollbars and no fixed-pixel-size containers standing in for what should resize.
 - [ ] The component gallery renders every reusable component in every state and theme mode.
 - [ ] Golden/visual-regression tests exist and are required in CI from this sprint forward.
 - [ ] Reduced-motion is respected by every animation.
@@ -2457,6 +2464,7 @@ This checklist is consolidated from `BDOS_Enforcement_Spec.md` "Test Requirement
 - [ ] Reduced-motion is respected across the app.
 - [ ] Every new/changed API endpoint and Flutter screen meets its §2.7 performance budget, or has a logged, TL-approved exception in `docs/perf-exceptions.md`.
 - [ ] The customer-facing Flutter app builds and passes CI across the full cross-platform matrix (Web, Windows, macOS, Linux, iOS, Android from Sprint 15.5).
+- [ ] Every new screen uses Sprint 1.5's adaptive layout system (DS1.9/DS1.10) — widgets resize with available space at compact/medium/expanded breakpoints; a fixed-size container with an internal scrollbar standing in for content that should reflow is a review-blocking finding, not a style preference.
 
 ## User Management & Platform Operations
 - [ ] Team invite/role-assignment/deactivation (Sprint 2) works end to end, and deactivation immediately revokes access.
