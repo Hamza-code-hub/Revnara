@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'health_provider.dart';
 
@@ -23,9 +25,24 @@ class PlaceholderLoginScreen extends ConsumerWidget {
             error: (error, stackTrace) =>
                 const _DevModeBanner(message: 'Backend unreachable at startup.'),
           ),
-          const Expanded(
+          Expanded(
             child: Center(
-              child: Text('Revnara — sign in (Sprint 2)'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Revnara — sign in (Sprint 2)'),
+                  // Debug-only convenience link -- not part of normal app
+                  // navigation (the /dev/gallery route stays hidden in
+                  // release builds and is never linked outside kDebugMode).
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => context.go('/dev/gallery'),
+                      child: const Text('View component gallery (dev)'),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ],
