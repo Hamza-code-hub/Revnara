@@ -12,11 +12,12 @@ class RevnaraApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: 'Revnara',
       debugShowCheckedModeBanner: false,
-      routerConfig: appRouter,
+      routerConfig: router,
       theme: RevnaraTheme.light(),
       darkTheme: RevnaraTheme.dark(),
       themeMode: themeMode,

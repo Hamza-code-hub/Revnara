@@ -77,6 +77,11 @@ jobs:
       - name: Confirm no un-generated model changes are pending
         run: alembic check
 
+      - name: Validate dev seed script against the real schema (DQ2.1)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d revnara -f ../supabase/seeds/dev_seed.sql
+
   docker-build:
     runs-on: ubuntu-latest
     steps:

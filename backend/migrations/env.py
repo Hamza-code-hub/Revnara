@@ -22,11 +22,14 @@ if config.config_file_name is not None:
 # against their own DATABASE_URL (§2.8 Configuration Over Hardcoding).
 config.set_main_option("sqlalchemy.url", get_settings().database_url)
 
-# Populated once the first domain models exist (Sprint 2 onward) so
-# `alembic revision --autogenerate` can diff against them.
-# from app.organizations.models import Base
-# target_metadata = Base.metadata
-target_metadata = None
+# Import every model module so its tables register on Base.metadata before
+# autogenerate/`alembic check` diff against it -- a model that isn't
+# imported here is invisible to Alembic regardless of whether the file
+# exists.
+from app.database import Base  # noqa: E402
+from app.organizations import models as _organizations_models  # noqa: E402, F401
+
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

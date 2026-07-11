@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
+    # HS256 shared secret, per docs/adr/0007-jwt-verification.md.
     supabase_jwt_secret: str = ""
+    supabase_jwt_audience: str = "authenticated"
 
     model_provider_api_key: str = ""
     model_provider_fallback_api_key: str = ""

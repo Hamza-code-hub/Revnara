@@ -45,11 +45,16 @@ uvicorn app.main:app --reload
 ```bash
 cd desktop
 flutter pub get
-flutter run -d windows   # or web-server / macos / linux
+flutter run -d windows \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+  # or web-server / macos / linux
 ```
 
-Both projects currently run against no real database — the Supabase CLI and a provisioned Supabase project are required for anything beyond the `/health` endpoint (see `docs/Revnara_Sprint_Development_Plan.md` §4 Environment & Account Prerequisites).
+Without the `SUPABASE_URL`/`SUPABASE_ANON_KEY` dart-defines, the app still runs (useful for `/dev/gallery` or backend-only work) but the login screen shows a clear "Supabase is not configured" state instead of a sign-in form.
+
+Both projects currently run against no real database by default — the Supabase CLI and a provisioned Supabase project are required for real sign-in and any endpoint beyond `/health` (see `docs/Revnara_Sprint_Development_Plan.md` §4 Environment & Account Prerequisites). The backend test suite (`pytest`) runs against a local SQLite stand-in instead and does not require this setup — see `backend/tests/README.md`.
 
 ## Status
 
-Sprint 1 and Sprint 1.5 (Stack Reset, Design System & Motion Foundation) are complete. Visit `/dev/gallery` in the running `desktop` app to see the full component library (light/dark). Sprint 2 (Identity & Tenancy Backend) is next — see `docs/Revnara_Sprint_Development_Plan.md`.
+Sprint 1, 1.5 (Design System), and 2 (Identity & Tenancy Backend) are complete. Real Supabase Auth sign-in, organization/workspace/role/permission models, tenant context resolution, and team management (invite/role-change/deactivate) are implemented and tested — see `docs/Revnara_Sprint_Development_Plan.md` for what's verified vs. what still needs a real Supabase project to confirm live. Sprint 3 (Authorization, RLS & Tenant Isolation Hardening) is next.
