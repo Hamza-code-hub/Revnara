@@ -1,6 +1,6 @@
 # RLS Tests
 
-Requires a real Postgres connection, with Sprint 1-4's Alembic migrations and every `supabase/rls/*.sql` file applied, connected as a **non-superuser role** -- superusers bypass RLS (and `FORCE ROW LEVEL SECURITY`) entirely, which would make these tests pass for the wrong reason. This is the one thing in this repo that genuinely cannot be verified against SQLite.
+Requires a real Postgres connection, with Sprint 1-5's Alembic migrations and every `supabase/rls/*.sql` file applied, connected as a **non-superuser role** -- superusers bypass RLS (and `FORCE ROW LEVEL SECURITY`) entirely, which would make these tests pass for the wrong reason. This is the one thing in this repo that genuinely cannot be verified against SQLite. (Sprint 5's migration additionally needs the `vector`/`pgmq` extensions -- not available on a vanilla Postgres install at all, see `docs/rag-pattern.md` and `backend/tests/rag/README.md` for that separate requirement.)
 
 Skipped automatically (with a clear reason) if `RLS_TEST_DATABASE_URL` isn't set -- these do not run as part of the default `pytest` invocation used by `tests/unit` and `tests/integration`.
 
@@ -29,6 +29,7 @@ psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/team_member_skills
 psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/portfolio_items.sql
 psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/case_studies.sql
 psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/files.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/knowledge_chunks.sql
 
 # then run the suite:
 RLS_TEST_DATABASE_URL=postgresql+asyncpg://revnara_app@<host>/revnara_rls_test pytest tests/rls -v

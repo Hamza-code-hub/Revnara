@@ -322,6 +322,26 @@ class ApiClient {
     return CompanyFile.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<void> deleteFile(String organizationId, String fileId) async {
+    await _guarded(() => _dio.delete('/organizations/$organizationId/files/$fileId'));
+  }
+
+  // --- Sprint 5: Company Brain Retrieval / RAG (debug search preview) -----
+
+  Future<List<KnowledgeSearchResult>> searchKnowledge(
+    String organizationId, {
+    required String query,
+    int limit = 10,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/knowledge/search',
+          data: {'query': query, 'limit': limit},
+        ));
+    return (response.data as List)
+        .map((e) => KnowledgeSearchResult.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Response> _guarded(Future<Response> Function() request) async {
     try {
       return await request();

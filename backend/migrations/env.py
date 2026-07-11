@@ -31,6 +31,7 @@ from app.company import models as _company_models  # noqa: E402, F401
 from app.database import Base  # noqa: E402
 from app.files import models as _files_models  # noqa: E402, F401
 from app.organizations import models as _organizations_models  # noqa: E402, F401
+from app.rag import models as _rag_models  # noqa: E402, F401
 
 target_metadata = Base.metadata
 

@@ -1,6 +1,7 @@
 import os
 import uuid
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -14,17 +15,33 @@ from sqlalchemy.ext.asyncio import (
 
 RLS_DATABASE_URL = os.environ.get("RLS_TEST_DATABASE_URL")
 
-pytestmark = pytest.mark.skipif(
-    not RLS_DATABASE_URL,
-    reason=(
-        "RLS_TEST_DATABASE_URL not set -- these tests require a real Postgres "
-        "connection, with Sprint 1-3's Alembic migrations and every "
-        "supabase/rls/*.sql file already applied, connected as a NON-superuser "
-        "role (superusers bypass RLS/FORCE RLS entirely, which would make "
-        "these tests pass for the wrong reason). SQLite has no RLS at all. "
-        "See docs/rls-pattern.md and backend/tests/rls/README.md."
-    ),
+_SKIP_REASON = (
+    "RLS_TEST_DATABASE_URL not set -- these tests require a real Postgres "
+    "connection, with Sprint 1-3's Alembic migrations and every "
+    "supabase/rls/*.sql file already applied, connected as a NON-superuser "
+    "role (superusers bypass RLS/FORCE RLS entirely, which would make "
+    "these tests pass for the wrong reason). SQLite has no RLS at all. "
+    "See docs/rls-pattern.md and backend/tests/rls/README.md."
 )
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """A bare module-level `pytestmark` in a conftest.py does NOT apply to
+    sibling test modules in the same directory -- confirmed by actually
+    running `pytest tests/rls` with the env var unset and getting a wall
+    of connection errors instead of clean skips, not assumed from how
+    `pytestmark` behaves when placed directly in a test file. This hook
+    is the correct, directory-scoped way to do it, filtered to only this
+    conftest's own directory since `pytest_collection_modifyitems` runs
+    against the whole session's collected items, not just local ones.
+    """
+    if RLS_DATABASE_URL:
+        return
+    this_dir = Path(__file__).parent
+    skip_marker = pytest.mark.skip(reason=_SKIP_REASON)
+    for item in items:
+        if this_dir in item.path.parents:
+            item.add_marker(skip_marker)
 
 
 @pytest_asyncio.fixture

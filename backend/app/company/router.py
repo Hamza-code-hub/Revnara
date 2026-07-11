@@ -29,6 +29,7 @@ from app.database import get_db_session
 from app.organizations.authorization import require_permission
 from app.organizations.models import Organization
 from app.organizations.schemas import OrganizationRead
+from app.rag.ingestion import delete_chunks_for_source, enqueue_embedding_tasks
 from app.tenancy.context import TenantContext
 from app.tenancy.middleware import resolve_tenant_context
 from app.tenancy.repository import scoped_to_tenant
@@ -39,6 +40,45 @@ router = APIRouter(tags=["company"])
 def _check_tenant(organization_id: uuid.UUID, tenant: TenantContext) -> None:
     if organization_id != tenant.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant mismatch.")
+
+
+async def _enqueue_portfolio_item_embedding(
+    db: AsyncSession, *, organization_id: uuid.UUID, item: PortfolioItem
+) -> None:
+    """Portfolio items already hold plain text (no file to parse), so this
+    goes straight to embedding_tasks -- no document_worker step needed,
+    unlike file uploads (app/files/service.py's confirm_upload)."""
+    text = " ".join(part for part in (item.title, item.description) if part)
+    await enqueue_embedding_tasks(
+        db,
+        tenant_id=organization_id,
+        workspace_id=item.workspace_id,
+        source_type="portfolio_item",
+        source_id=item.id,
+        text=text,
+        classification=item.classification,
+        source_version=item.version,
+    )
+
+
+async def _enqueue_case_study_embedding(
+    db: AsyncSession, *, organization_id: uuid.UUID, case_study: CaseStudy
+) -> None:
+    text = " ".join(
+        part
+        for part in (case_study.title, case_study.summary, case_study.content)
+        if part
+    )
+    await enqueue_embedding_tasks(
+        db,
+        tenant_id=organization_id,
+        workspace_id=case_study.workspace_id,
+        source_type="case_study",
+        source_id=case_study.id,
+        text=text,
+        classification=case_study.classification,
+        source_version=case_study.version,
+    )
 
 
 # --- Company profile (fields on Organization itself) -----------------------
@@ -362,6 +402,8 @@ async def create_portfolio_item(
     db.add(item)
     await db.flush()
 
+    await _enqueue_portfolio_item_embedding(db, organization_id=organization_id, item=item)
+
     await write_audit_event(
         db,
         tenant_id=organization_id,
@@ -394,6 +436,8 @@ async def update_portfolio_item(
     item.version += 1
     await db.flush()
 
+    await _enqueue_portfolio_item_embedding(db, organization_id=organization_id, item=item)
+
     await write_audit_event(
         db,
         tenant_id=organization_id,
@@ -419,6 +463,9 @@ async def delete_portfolio_item(
         db, organization_id=organization_id, portfolio_item_id=portfolio_item_id
     )
 
+    await delete_chunks_for_source(
+        db, tenant_id=organization_id, source_type="portfolio_item", source_id=item.id
+    )
     await db.delete(item)
     await db.flush()
 
@@ -484,6 +531,8 @@ async def create_case_study(
     db.add(case_study)
     await db.flush()
 
+    await _enqueue_case_study_embedding(db, organization_id=organization_id, case_study=case_study)
+
     await write_audit_event(
         db,
         tenant_id=organization_id,
@@ -516,6 +565,8 @@ async def update_case_study(
     case_study.version += 1
     await db.flush()
 
+    await _enqueue_case_study_embedding(db, organization_id=organization_id, case_study=case_study)
+
     await write_audit_event(
         db,
         tenant_id=organization_id,
@@ -541,6 +592,9 @@ async def delete_case_study(
         db, organization_id=organization_id, case_study_id=case_study_id
     )
 
+    await delete_chunks_for_source(
+        db, tenant_id=organization_id, source_type="case_study", source_id=case_study.id
+    )
     await db.delete(case_study)
     await db.flush()
 

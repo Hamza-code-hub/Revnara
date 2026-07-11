@@ -44,6 +44,9 @@ class StorageProvider(ABC):
     @abstractmethod
     async def create_signed_upload_url(self, *, bucket: str, path: str) -> SignedUpload: ...
 
+    @abstractmethod
+    async def download_file(self, *, bucket: str, path: str) -> bytes: ...
+
 
 class SupabaseStorageProvider(StorageProvider):
     """Calls Supabase Storage's real signed-upload-url REST API
@@ -73,3 +76,16 @@ class SupabaseStorageProvider(StorageProvider):
             return SignedUpload(
                 upload_url=f"{self._base_url}/storage/v1{data['url']}", token=data["token"]
             )
+
+    async def download_file(self, *, bucket: str, path: str) -> bytes:
+        """Fetches an object's raw bytes via the service-role key (Sprint 5,
+        document_worker) -- unlike uploads, downloads for the worker's own
+        processing never go through a signed URL, since the worker itself
+        holds the service-role credential already."""
+        async with httpx.AsyncClient(base_url=self._base_url) as client:
+            response = await client.get(
+                f"/storage/v1/object/{bucket}/{path}",
+                headers={"Authorization": f"Bearer {self._service_role_key}"},
+            )
+            response.raise_for_status()
+            return response.content

@@ -124,3 +124,27 @@ async def confirm_upload(
     )
 
     return FileRead.model_validate(file_record)
+
+
+@router.delete("/organizations/{organization_id}/files/{file_id}", status_code=204)
+async def delete_file(
+    organization_id: uuid.UUID,
+    file_id: uuid.UUID,
+    tenant: TenantContext = Depends(require_permission("company.manage")),
+    db: AsyncSession = Depends(get_db_session),
+) -> None:
+    _check_tenant(organization_id, tenant)
+
+    try:
+        await service.delete_file(db, tenant_id=organization_id, file_id=file_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    await write_audit_event(
+        db,
+        tenant_id=organization_id,
+        actor_type=ActorType.USER,
+        actor_id=tenant.user_id,
+        action_type="file.delete",
+        outcome=AuditOutcome.EXECUTED,
+    )

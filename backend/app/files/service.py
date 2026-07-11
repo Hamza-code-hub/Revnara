@@ -5,6 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.files.models import File, FileStatus
 from app.files.storage import SignedUpload, StorageProvider, build_tenant_storage_path
+from app.rag import queue
+from app.rag.ingestion import DOCUMENT_QUEUE_NAME, delete_chunks_for_source
+from app.rag.schemas import DocumentTask
 from app.tenancy.repository import scoped_to_tenant
 
 
@@ -74,4 +77,29 @@ async def confirm_upload(
     file_record.size_bytes = size_bytes
     file_record.version += 1
     await db.flush()
+
+    # Sprint 5: hand off to document_worker for parsing + embedding --
+    # there's nothing to parse before the file is actually uploaded, so
+    # this is the earliest correct point to enqueue it.
+    task = DocumentTask(
+        tenant_id=tenant_id,
+        workspace_id=file_record.workspace_id,
+        task_id=uuid.uuid4(),
+        resource_id=file_record.id,
+        idempotency_key=f"{file_record.id}:v{file_record.version}",
+    )
+    await queue.send(db, DOCUMENT_QUEUE_NAME, task.model_dump(mode="json"))
+
     return file_record
+
+
+async def delete_file(db: AsyncSession, *, tenant_id: uuid.UUID, file_id: uuid.UUID) -> None:
+    file_record = await get_file(db, tenant_id=tenant_id, file_id=file_id)
+    if file_record is None:
+        raise LookupError("File not found.")
+
+    await delete_chunks_for_source(
+        db, tenant_id=tenant_id, source_type="file", source_id=file_id
+    )
+    await db.delete(file_record)
+    await db.flush()

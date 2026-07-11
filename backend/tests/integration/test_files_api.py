@@ -23,6 +23,9 @@ class _FakeStorageProvider(StorageProvider):
         self.calls.append((bucket, path))
         return SignedUpload(upload_url=f"https://storage.test/{bucket}/{path}", token="fake-token")
 
+    async def download_file(self, *, bucket: str, path: str) -> bytes:
+        return b""
+
 
 async def _create_org_and_headers(client: AsyncClient) -> tuple[uuid.UUID, dict[str, str]]:
     owner_id = uuid.uuid4()

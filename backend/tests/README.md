@@ -22,7 +22,12 @@ connection -- do not add RLS tests to this SQLite-backed suite and
 consider them equivalent to the real thing.
 
 `tests/rls/` -- real Postgres-only tests (Sprint 3's core tenant isolation,
-Sprint 4's Company Brain tables) -- skipped unless `RLS_TEST_DATABASE_URL`
-is set, see `tests/rls/README.md`.
+Sprint 4's Company Brain tables, Sprint 5's `knowledge_chunks`) --
+skipped unless `RLS_TEST_DATABASE_URL` is set, see `tests/rls/README.md`.
 
-`tests/workers/` -- reserved for worker/queue tests, starting Sprint 5.
+`tests/rag/` -- real Supabase-project-only tests (Sprint 5's pgvector
+similarity search and pgmq queue operations -- neither extension exists
+on a vanilla Postgres install at all, a stricter requirement than
+`tests/rls/`'s "any real Postgres") -- skipped unless
+`RAG_TEST_DATABASE_URL` is set, see `tests/rag/README.md` and
+`docs/rag-pattern.md`.

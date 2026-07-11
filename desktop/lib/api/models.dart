@@ -312,3 +312,34 @@ class SignedUpload {
     );
   }
 }
+
+/// FE5.1's debug-only search preview widget result -- mirrors
+/// backend/app/rag/schemas.py's KnowledgeSearchResultItem.
+class KnowledgeSearchResult {
+  KnowledgeSearchResult({
+    required this.chunkId,
+    required this.sourceType,
+    required this.sourceId,
+    required this.chunkText,
+    this.classification,
+    required this.distance,
+  });
+
+  final String chunkId;
+  final String sourceType;
+  final String sourceId;
+  final String chunkText;
+  final String? classification;
+  final double distance;
+
+  factory KnowledgeSearchResult.fromJson(Map<String, dynamic> json) {
+    return KnowledgeSearchResult(
+      chunkId: json['chunk_id'] as String,
+      sourceType: json['source_type'] as String,
+      sourceId: json['source_id'] as String,
+      chunkText: json['chunk_text'] as String,
+      classification: json['classification'] as String?,
+      distance: (json['distance'] as num).toDouble(),
+    );
+  }
+}

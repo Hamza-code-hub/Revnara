@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,7 @@ import '../../api/api_client.dart';
 import '../../api/models.dart';
 import '../../shared/design_system/design_system.dart';
 import 'file_upload_widget.dart';
+import 'knowledge_search_widget.dart';
 
 const _classificationOptions = ['public', 'confidential'];
 
@@ -110,37 +112,39 @@ Future<(String, String)?> _showTitleClassificationEditDialog(
 
 /// FE4.2: team/skills inventory + portfolio/case-study library --
 /// BE4.1/BE4.2's four new entities, one tab each, plus a Files tab for
-/// BE4.3/BE4.4's upload flow (see file_upload_widget.dart).
+/// BE4.3/BE4.4's upload flow (see file_upload_widget.dart), plus a
+/// debug-only search preview tab (FE5.1, see knowledge_search_widget.dart)
+/// that never appears in release builds.
 class TeamPortfolioScreen extends StatelessWidget {
   const TeamPortfolioScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tabs = <Tab>[
+      const Tab(text: 'Team'),
+      const Tab(text: 'Skills'),
+      const Tab(text: 'Portfolio'),
+      const Tab(text: 'Case studies'),
+      const Tab(text: 'Files'),
+      if (kDebugMode) const Tab(text: 'Search (debug)'),
+    ];
+    final views = <Widget>[
+      const _TeamTab(),
+      const _SkillsTab(),
+      const _PortfolioTab(),
+      const _CaseStudiesTab(),
+      const CompanyFileUploadWidget(),
+      if (kDebugMode) const KnowledgeSearchWidget(),
+    ];
+
     return DefaultTabController(
-      length: 5,
+      length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Team & portfolio'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Team'),
-              Tab(text: 'Skills'),
-              Tab(text: 'Portfolio'),
-              Tab(text: 'Case studies'),
-              Tab(text: 'Files'),
-            ],
-          ),
+          bottom: TabBar(isScrollable: true, tabs: tabs),
         ),
-        body: const TabBarView(
-          children: [
-            _TeamTab(),
-            _SkillsTab(),
-            _PortfolioTab(),
-            _CaseStudiesTab(),
-            CompanyFileUploadWidget(),
-          ],
-        ),
+        body: TabBarView(children: views),
       ),
     );
   }

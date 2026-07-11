@@ -47,8 +47,16 @@ jobs:
   migration-check:
     runs-on: ubuntu-latest
     services:
+      # Sprint 5's migration needs the `vector` and `pgmq` extensions,
+      # neither bundled with a vanilla postgres image (confirmed
+      # empirically -- see docs/rag-pattern.md) -- switched to Supabase's
+      # own reference Postgres image (what a real Supabase project
+      # actually runs, also what `supabase start` uses locally) rather
+      # than a plain postgres:16 image plus a guessed-at extension
+      # installation step. Not yet verified by an actual CI run in this
+      # environment -- watch the first real run of this job closely.
       postgres:
-        image: postgres:16
+        image: supabase/postgres:latest
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -95,8 +103,10 @@ jobs:
   rls-tests:
     runs-on: ubuntu-latest
     services:
+      # See migration-check's identical comment -- Sprint 5's migration
+      # needs vector/pgmq, not available on a vanilla postgres image.
       postgres:
-        image: postgres:16
+        image: supabase/postgres:latest
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -112,6 +122,7 @@ jobs:
       PGPASSWORD: postgres
       APP_DATABASE_URL: postgresql+asyncpg://revnara_app@localhost:5432/revnara_rls_test
       RLS_TEST_DATABASE_URL: postgresql+asyncpg://revnara_app@localhost:5432/revnara_rls_test
+      RAG_TEST_DATABASE_URL: postgresql+asyncpg://revnara_app@localhost:5432/revnara_rls_test
     steps:
       - uses: actions/checkout@v4
 
@@ -135,9 +146,18 @@ jobs:
 
       - name: Apply every RLS policy file as the app role
         run: |
-          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events skills team_members team_member_skills portfolio_items case_studies files; do
+          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events skills team_members team_member_skills portfolio_items case_studies files knowledge_chunks; do
             psql -h localhost -U revnara_app -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/rls/${f}.sql"
           done
+
+      # Provisions the document_tasks/embedding_tasks queues as the
+      # superuser postgres role -- safe regardless of which role ends up
+      # owning the vector/pgmq extensions in this fresh database (see
+      # docs/rag-pattern.md's ownership-order explanation), unlike the
+      # real Supabase project where only the admin role can do this.
+      - name: Provision RAG queues as the superuser role
+        run: |
+          psql -h localhost -U postgres -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/config/rag_queues.sql"
 
       - name: Confirm every tenant-scoped table actually has RLS enabled
         run: |
@@ -162,6 +182,9 @@ jobs:
 
       - name: Run the real RLS test suite
         run: pytest tests/rls -v
+
+      - name: Run the real RAG test suite (pgvector + pgmq)
+        run: pytest tests/rag -v
 
   docker-build:
     runs-on: ubuntu-latest

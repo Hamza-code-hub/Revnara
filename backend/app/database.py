@@ -17,7 +17,12 @@ class Base(DeclarativeBase):
 
 
 _engine = create_async_engine(get_settings().database_url)
-_session_factory = async_sessionmaker(_engine, expire_on_commit=False)
+
+# Public (not FastAPI-specific) so workers -- which have no request/DI
+# cycle to hang a session off of -- can open their own sessions the same
+# way get_db_session does below, just without the request-scoped
+# commit/rollback wrapper.
+session_factory = async_sessionmaker(_engine, expire_on_commit=False)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession]:
@@ -28,7 +33,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession]:
     (and the rollback test from Sprint 2's testing tasks exercises this
     path directly, not each handler's own error handling).
     """
-    async with _session_factory() as session:
+    async with session_factory() as session:
         try:
             yield session
             await session.commit()

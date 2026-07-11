@@ -1,0 +1,39 @@
+# Sprint 5 (DQ5.1) config stub for the document-worker Cloud Run service.
+# Shares the backend's one Docker image (backend/Dockerfile) with every
+# other service -- only the container command differs.
+#
+# Not deployed anywhere yet -- no GCP project exists in this environment
+# (docs/Revnara_Sprint_Development_Plan.md §4 Environment Prerequisites).
+# Full production config (scaling, secrets, service account bindings) is
+# Sprint 15's job; this stub exists so the shape is decided now rather
+# than invented from scratch at deploy time.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: revnara-document-worker
+spec:
+  template:
+    spec:
+      containers:
+        - image: IMAGE_PLACEHOLDER # same image as revnara-api
+          command: ["python", "-m", "workers.document_worker.main"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: revnara-database-url
+                  key: latest
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: revnara-supabase-url
+                  key: latest
+            - name: SUPABASE_SERVICE_ROLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: revnara-supabase-service-role-key
+                  key: latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi

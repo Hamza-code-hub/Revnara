@@ -7,15 +7,16 @@ import '../../shared/design_system/design_system.dart';
 
 /// FE4.3: private file uploads for the company brain.
 ///
-/// This widget drives the real backend flow (POST .../files/signed-upload
-/// then POST .../files/{id}/confirm) end to end, but there is no real
-/// Supabase Storage project in this environment to actually PUT bytes to
-/// (see backend/app/files/storage.py's SupabaseStorageProvider docstring)
-/// -- a native file picker (`file_picker` package) and the real upload
-/// PUT are follow-up work once a Supabase project exists. Until then this
-/// takes a filename directly and confirms immediately, which still
-/// exercises every part of the flow the backend actually controls
-/// (tenant-scoped path construction, file metadata, RLS).
+/// Drives the real backend flow (POST .../files/signed-upload then POST
+/// .../files/{id}/confirm) end to end -- verified for real against a live
+/// Supabase project (Sprint 4 follow-up), including an actual PUT of file
+/// bytes to the signed URL. This widget itself still takes a filename
+/// directly rather than opening a native file picker (`file_picker`
+/// package integration is separate follow-up work), so it confirms
+/// immediately after requesting the signed URL instead of performing a
+/// real PUT from Flutter -- the backend-controlled half of the flow
+/// (tenant-scoped path construction, file metadata, RLS) is exercised
+/// either way.
 class CompanyFileUploadWidget extends ConsumerStatefulWidget {
   const CompanyFileUploadWidget({super.key});
 
@@ -60,6 +61,17 @@ class _CompanyFileUploadWidgetState
       setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _delete(CompanyFile file) async {
+    final organizationId = _organizationId;
+    if (organizationId == null) return;
+    try {
+      await ref.read(apiClientProvider).deleteFile(organizationId, file.id);
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) RevnaraToast.show(context, e.message, variant: RevnaraToastVariant.error);
     }
   }
 
@@ -122,6 +134,11 @@ class _CompanyFileUploadWidgetState
               title: file.originalFilename,
               subtitle: file.status,
               leading: const Icon(Icons.insert_drive_file_outlined),
+              trailing: IconButton(
+                tooltip: 'Delete',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _delete(file),
+              ),
             ),
           ),
       ],
