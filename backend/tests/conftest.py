@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 import jwt
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -54,10 +55,12 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
-    """An httpx AsyncClient wired directly to the FastAPI app (ASGI
-    transport, no real network/port) with the DB dependency overridden to
-    the per-test SQLite session from [db_session].
+async def app_under_test(db_session: AsyncSession) -> FastAPI:
+    """The FastAPI app instance itself, exposed as its own fixture (rather
+    than only built inside [client]) so individual tests can add their own
+    `dependency_overrides` -- e.g. swapping in a fake StorageProvider for
+    app/files/router.py's real Supabase-calling one, see
+    tests/integration/test_files_api.py.
     """
     app = create_app()
 
@@ -73,13 +76,19 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
             raise
 
     app.dependency_overrides[get_db_session] = _override_get_db_session
+    return app
 
+
+@pytest_asyncio.fixture
+async def client(app_under_test: FastAPI) -> AsyncGenerator[AsyncClient]:
+    """An httpx AsyncClient wired directly to the FastAPI app (ASGI
+    transport, no real network/port)."""
     # raise_app_exceptions=False: a real deployment's ServerErrorMiddleware
     # converts an unhandled exception into a 500 response rather than
     # crashing the process -- the default ASGITransport instead re-raises
     # into the caller, which would make any "the API returns 500" test
     # (e.g. the rollback/atomicity test) fail for the wrong reason.
-    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    transport = ASGITransport(app=app_under_test, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 

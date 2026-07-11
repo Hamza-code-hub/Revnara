@@ -30,6 +30,15 @@ class Organization(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Sprint 4 (Company Brain) profile fields -- there is no separate
+    # `company_profiles` table in the MVP data model (see
+    # docs/Revnara_Implementation_Plan.md §7's MVP Tables list), so a
+    # tenant's "company profile" is just these columns on its own
+    # Organization row.
+    description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    industry: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    website: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    founded_year: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, nullable=False
     )

@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
     supabase_jwt_audience: str = "authenticated"
 
+    # Sprint 4 (Company Brain): private bucket for tenant file uploads.
+    # Per-tenant isolation is a path prefix within this one bucket (see
+    # app/files/storage.py), enforced by both the backend's own path
+    # construction and a Supabase Storage bucket policy (DB4.2).
+    supabase_storage_bucket: str = "company-files"
+
     model_provider_api_key: str = ""
     model_provider_fallback_api_key: str = ""
 

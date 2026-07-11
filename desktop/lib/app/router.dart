@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../auth/membership_provider.dart';
 import '../auth/session.dart';
 import '../features/command_center/command_center_screen.dart';
+import '../features/company/company_profile_screen.dart';
+import '../features/company/team_portfolio_screen.dart';
 import '../features/onboarding/create_organization_screen.dart';
 import '../features/settings/login_screen.dart';
 import '../features/settings/team_management_screen.dart';
@@ -97,6 +99,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           state: state,
           child: const TeamManagementScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/company/profile',
+        pageBuilder: (context, state) => revnaraPageTransition(
+          key: state.pageKey,
+          state: state,
+          child: const CompanyProfileScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/company/brain',
+        pageBuilder: (context, state) => revnaraPageTransition(
+          key: state.pageKey,
+          state: state,
+          child: const TeamPortfolioScreen(),
         ),
       ),
       GoRoute(

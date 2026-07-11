@@ -75,7 +75,8 @@ values
   ('99999999-9999-9999-9999-999999999991', 'members.invite', 'Invite new team members', now()),
   ('99999999-9999-9999-9999-999999999992', 'members.remove', 'Deactivate/remove team members', now()),
   ('99999999-9999-9999-9999-999999999993', 'members.manage_roles', 'Change a team member''s role', now()),
-  ('99999999-9999-9999-9999-999999999994', 'org.manage', 'Manage organization settings', now());
+  ('99999999-9999-9999-9999-999999999994', 'org.manage', 'Manage organization settings', now()),
+  ('99999999-9999-9999-9999-999999999995', 'company.manage', 'Manage company profile, team, skills, and portfolio', now());
 
 insert into role_permissions (id, role_id, permission_id, created_at)
 values
@@ -84,10 +85,58 @@ values
   (gen_random_uuid(), '11111111-1111-1111-1111-111111111121', '99999999-9999-9999-9999-999999999992', now()),
   (gen_random_uuid(), '11111111-1111-1111-1111-111111111121', '99999999-9999-9999-9999-999999999993', now()),
   (gen_random_uuid(), '11111111-1111-1111-1111-111111111121', '99999999-9999-9999-9999-999999999994', now()),
+  (gen_random_uuid(), '11111111-1111-1111-1111-111111111121', '99999999-9999-9999-9999-999999999995', now()),
   -- Beta owner: all permissions
   (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999991', now()),
   (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999992', now()),
   (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999993', now()),
-  (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999994', now());
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999994', now()),
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999995', now());
+
+-- Sprint 4 (Company Brain, DB4.3): company profile fields + team/skills/
+-- portfolio/case-study sample data for both dev tenants.
+
+update organizations set
+  description = 'Acme Software builds custom web and mobile products for mid-market clients.',
+  industry = 'Software Consulting',
+  website = 'https://acme-seed.test',
+  founded_year = 2015
+where id = '11111111-1111-1111-1111-111111111111';
+
+update organizations set
+  description = 'Beta Consulting delivers data platform and analytics engagements.',
+  industry = 'Data & Analytics Consulting',
+  website = 'https://beta-seed.test',
+  founded_year = 2018
+where id = '22222222-2222-2222-2222-222222222221';
+
+insert into skills (id, tenant_id, name, category, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111151', '11111111-1111-1111-1111-111111111111', 'Flutter', 'Frontend', now(), now(), 1, false),
+  ('11111111-1111-1111-1111-111111111152', '11111111-1111-1111-1111-111111111111', 'FastAPI', 'Backend', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222261', '22222222-2222-2222-2222-222222222221', 'PostgreSQL', 'Data', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222262', '22222222-2222-2222-2222-222222222221', 'dbt', 'Data', now(), now(), 1, false);
+
+insert into team_members (id, tenant_id, name, title, email, bio, hourly_rate, currency, weekly_availability_hours, is_active, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111161', '11111111-1111-1111-1111-111111111111', 'Alex Rivera', 'Lead Engineer', 'alex@acme-seed.test', 'Full-stack lead with 8 years of Flutter/FastAPI delivery.', 95.00, 'USD', 30, true, now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222271', '22222222-2222-2222-2222-222222222221', 'Jordan Lee', 'Data Engineer', 'jordan@beta-seed.test', 'Analytics engineer specializing in warehouse modeling.', 85.00, 'USD', 25, true, now(), now(), 1, false);
+
+insert into team_member_skills (id, team_member_id, skill_id, proficiency_level, created_at)
+values
+  (gen_random_uuid(), '11111111-1111-1111-1111-111111111161', '11111111-1111-1111-1111-111111111151', 'expert', now()),
+  (gen_random_uuid(), '11111111-1111-1111-1111-111111111161', '11111111-1111-1111-1111-111111111152', 'expert', now()),
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222271', '22222222-2222-2222-2222-222222222261', 'expert', now()),
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222271', '22222222-2222-2222-2222-222222222262', 'intermediate', now());
+
+insert into portfolio_items (id, tenant_id, title, description, client_name, technologies, project_url, completed_at, classification, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111171', '11111111-1111-1111-1111-111111111111', 'Inventory Management Rebuild', 'Rebuilt a legacy inventory system as a Flutter + FastAPI app.', 'Acme Retail Client', 'Flutter, FastAPI, PostgreSQL', 'https://acme-seed.test/case/inventory', '2025-11-01 00:00:00+00', 'public', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222281', '22222222-2222-2222-2222-222222222221', 'Sales Analytics Warehouse', 'Stood up a dbt-based analytics warehouse and dashboard suite.', 'Beta Retail Client', 'PostgreSQL, dbt', 'https://beta-seed.test/case/warehouse', '2025-09-15 00:00:00+00', 'confidential', now(), now(), 1, false);
+
+insert into case_studies (id, tenant_id, portfolio_item_id, title, summary, content, outcome_metrics, classification, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111181', '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111171', 'How Acme Cut Inventory Errors by 40%', 'A rebuild of a client''s inventory system.', 'Full narrative of the engagement, approach, and delivery timeline.', 'Inventory discrepancies down 40%, page load time down 60%.', 'public', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222291', '22222222-2222-2222-2222-222222222221', '22222222-2222-2222-2222-222222222281', 'Beta''s Analytics Warehouse Rollout', 'Confidential engagement summary -- internal use only.', 'Full narrative restricted to internal reference; not for external proposal citation.', 'Query latency down 70%.', 'confidential', now(), now(), 1, false);
 
 commit;

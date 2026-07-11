@@ -21,7 +21,8 @@ meaningfully verified against SQLite and require a real Postgres
 connection -- do not add RLS tests to this SQLite-backed suite and
 consider them equivalent to the real thing.
 
-`tests/rls/` -- reserved for Sprint 3 onward; empty until a real Postgres
-connection is available.
+`tests/rls/` -- real Postgres-only tests (Sprint 3's core tenant isolation,
+Sprint 4's Company Brain tables) -- skipped unless `RLS_TEST_DATABASE_URL`
+is set, see `tests/rls/README.md`.
 
 `tests/workers/` -- reserved for worker/queue tests, starting Sprint 5.

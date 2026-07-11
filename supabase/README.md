@@ -10,7 +10,7 @@ Supabase is the **managed data platform** this product runs on: PostgreSQL, Auth
 
 - `rls/` — Row-level security policy SQL, one file per table, applied *after* the corresponding Alembic migration creates the table (same PR, per `docs/Revnara_Sprint_Development_Plan.md` §2.2's "every table ships RLS in the same PR" rule). RLS policies are kept here rather than inside Alembic migrations so they're easy to find, diff, and audit as their own category — they're a governance artifact as much as a schema one.
 - `seeds/` — Local/staging seed data (`dev_seed.sql` etc.), introduced starting Sprint 2.
-- `config/` — Supabase CLI project configuration, linking this repo to the `revnara-local`/`revnara-staging`/`revnara-prod` projects (Auth provider settings, Storage bucket policy, etc. — platform configuration Alembic has no concept of).
+- `config/` — Supabase CLI project configuration, linking this repo to the `revnara-local`/`revnara-staging`/`revnara-prod` projects (Auth provider settings, Storage bucket policy, etc. — platform configuration Alembic has no concept of). `storage_buckets.sql` (Sprint 4) provisions the private `company-files` bucket used by `app/files/storage.py`.
 
 ## Not yet initialized
 

@@ -11,10 +11,16 @@ PERMISSIONS: dict[str, str] = {
     "members.remove": "Deactivate/remove team members",
     "members.manage_roles": "Change a team member's role",
     "org.manage": "Manage organization settings",
+    "company.manage": "Manage company profile, team, skills, and portfolio",
 }
 
 DEFAULT_ROLE_PERMISSIONS: dict[str, set[str]] = {
     "owner": set(PERMISSIONS.keys()),
-    "admin": {"members.invite", "members.remove", "members.manage_roles"},
+    "admin": {
+        "members.invite",
+        "members.remove",
+        "members.manage_roles",
+        "company.manage",
+    },
     "member": set(),
 }

@@ -1,6 +1,6 @@
 # RLS Tests
 
-Requires a real Postgres connection, with Sprint 1-3's Alembic migrations and every `supabase/rls/*.sql` file applied, connected as a **non-superuser role** -- superusers bypass RLS (and `FORCE ROW LEVEL SECURITY`) entirely, which would make these tests pass for the wrong reason. This is the one thing in this repo that genuinely cannot be verified against SQLite.
+Requires a real Postgres connection, with Sprint 1-4's Alembic migrations and every `supabase/rls/*.sql` file applied, connected as a **non-superuser role** -- superusers bypass RLS (and `FORCE ROW LEVEL SECURITY`) entirely, which would make these tests pass for the wrong reason. This is the one thing in this repo that genuinely cannot be verified against SQLite.
 
 Skipped automatically (with a clear reason) if `RLS_TEST_DATABASE_URL` isn't set -- these do not run as part of the default `pytest` invocation used by `tests/unit` and `tests/integration`.
 
@@ -23,6 +23,12 @@ psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/permissions.sql
 psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/role_permissions.sql
 psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/organization_members.sql
 psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/audit_events.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/skills.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/team_members.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/team_member_skills.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/portfolio_items.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/case_studies.sql
+psql -U revnara_app -d revnara_rls_test -f ../../supabase/rls/files.sql
 
 # then run the suite:
 RLS_TEST_DATABASE_URL=postgresql+asyncpg://revnara_app@<host>/revnara_rls_test pytest tests/rls -v

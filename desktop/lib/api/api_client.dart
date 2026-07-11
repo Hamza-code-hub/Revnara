@@ -109,6 +109,219 @@ class ApiClient {
     await _guarded(() => _dio.delete('/organizations/$organizationId/members/$memberId'));
   }
 
+  // --- Sprint 4: Company Brain -------------------------------------------
+
+  Future<Organization> getOrganizationProfile(String organizationId) async {
+    final response = await _guarded(() => _dio.get('/organizations/$organizationId'));
+    return Organization.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<Organization> updateOrganizationProfile(
+    String organizationId, {
+    String? description,
+    String? industry,
+    String? website,
+    int? foundedYear,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId',
+          data: {
+            'description': ?description,
+            'industry': ?industry,
+            'website': ?website,
+            'founded_year': ?foundedYear,
+          },
+        ));
+    return Organization.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<Skill>> listSkills(String organizationId) async {
+    final response = await _guarded(() => _dio.get('/organizations/$organizationId/skills'));
+    return (response.data as List)
+        .map((e) => Skill.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Skill> createSkill(String organizationId, {required String name, String? category}) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/skills',
+          data: {'name': name, 'category': ?category},
+        ));
+    return Skill.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<Skill> updateSkill(
+    String organizationId,
+    String skillId, {
+    String? name,
+    String? category,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/skills/$skillId',
+          data: {'name': ?name, 'category': ?category},
+        ));
+    return Skill.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteSkill(String organizationId, String skillId) async {
+    await _guarded(() => _dio.delete('/organizations/$organizationId/skills/$skillId'));
+  }
+
+  Future<List<TeamMember>> listTeamMembers(String organizationId) async {
+    final response =
+        await _guarded(() => _dio.get('/organizations/$organizationId/team-members'));
+    return (response.data as List)
+        .map((e) => TeamMember.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<TeamMember> createTeamMember(
+    String organizationId, {
+    required String name,
+    String? title,
+    List<String> skillIds = const [],
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/team-members',
+          data: {
+            'name': name,
+            'title': ?title,
+            'skill_ids': skillIds,
+          },
+        ));
+    return TeamMember.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<TeamMember> updateTeamMember(
+    String organizationId,
+    String teamMemberId, {
+    String? name,
+    String? title,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/team-members/$teamMemberId',
+          data: {'name': ?name, 'title': ?title},
+        ));
+    return TeamMember.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteTeamMember(String organizationId, String teamMemberId) async {
+    await _guarded(
+        () => _dio.delete('/organizations/$organizationId/team-members/$teamMemberId'));
+  }
+
+  Future<List<PortfolioItem>> listPortfolioItems(String organizationId) async {
+    final response =
+        await _guarded(() => _dio.get('/organizations/$organizationId/portfolio-items'));
+    return (response.data as List)
+        .map((e) => PortfolioItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<PortfolioItem> createPortfolioItem(
+    String organizationId, {
+    required String title,
+    String? classification,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/portfolio-items',
+          data: {'title': title, 'classification': ?classification},
+        ));
+    return PortfolioItem.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<PortfolioItem> updatePortfolioItem(
+    String organizationId,
+    String portfolioItemId, {
+    String? title,
+    String? classification,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/portfolio-items/$portfolioItemId',
+          data: {'title': ?title, 'classification': ?classification},
+        ));
+    return PortfolioItem.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deletePortfolioItem(String organizationId, String portfolioItemId) async {
+    await _guarded(
+        () => _dio.delete('/organizations/$organizationId/portfolio-items/$portfolioItemId'));
+  }
+
+  Future<List<CaseStudy>> listCaseStudies(String organizationId) async {
+    final response =
+        await _guarded(() => _dio.get('/organizations/$organizationId/case-studies'));
+    return (response.data as List)
+        .map((e) => CaseStudy.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<CaseStudy> createCaseStudy(
+    String organizationId, {
+    required String title,
+    String? portfolioItemId,
+    String? classification,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/case-studies',
+          data: {
+            'title': title,
+            'portfolio_item_id': ?portfolioItemId,
+            'classification': ?classification,
+          },
+        ));
+    return CaseStudy.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CaseStudy> updateCaseStudy(
+    String organizationId,
+    String caseStudyId, {
+    String? title,
+    String? classification,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/case-studies/$caseStudyId',
+          data: {'title': ?title, 'classification': ?classification},
+        ));
+    return CaseStudy.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteCaseStudy(String organizationId, String caseStudyId) async {
+    await _guarded(
+        () => _dio.delete('/organizations/$organizationId/case-studies/$caseStudyId'));
+  }
+
+  Future<List<CompanyFile>> listFiles(String organizationId) async {
+    final response = await _guarded(() => _dio.get('/organizations/$organizationId/files'));
+    return (response.data as List)
+        .map((e) => CompanyFile.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<SignedUpload> createSignedUpload(
+    String organizationId, {
+    required String filename,
+    String? contentType,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/files/signed-upload',
+          data: {'filename': filename, 'content_type': ?contentType},
+        ));
+    return SignedUpload.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CompanyFile> confirmUpload(
+    String organizationId,
+    String fileId, {
+    int? sizeBytes,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/files/$fileId/confirm',
+          data: {'size_bytes': ?sizeBytes},
+        ));
+    return CompanyFile.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<Response> _guarded(Future<Response> Function() request) async {
     try {
       return await request();

@@ -16,6 +16,12 @@ class OrganizationRead(BaseModel):
     id: uuid.UUID
     name: str
     created_at: datetime
+    # Sprint 4 (Company Brain) profile fields -- see
+    # app/organizations/models.py's Organization docstring comment.
+    description: str | None = None
+    industry: str | None = None
+    website: str | None = None
+    founded_year: int | None = None
 
 
 class WorkspaceRead(BaseModel):
