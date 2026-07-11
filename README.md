@@ -53,6 +53,8 @@ flutter run -d windows \
 
 Without the `SUPABASE_URL`/`SUPABASE_ANON_KEY` dart-defines, the app still runs (useful for `/dev/gallery` or backend-only work) but the login screen shows a clear "Supabase is not configured" state instead of a sign-in form.
 
+**The backend auto-starts when you run the desktop app** (debug builds only) — `flutter run` checks `/health`, and if nothing's there, launches `backend/.venv/.../python -m uvicorn app.main:app --reload` for you using the backend's own virtualenv, so you don't need a second terminal. Disable with `--dart-define=AUTO_START_BACKEND=false` if you're running the backend yourself with different flags, or don't have it set up locally (e.g. web builds skip this entirely, and it never runs in release builds).
+
 Both projects currently run against no real database by default — the Supabase CLI and a provisioned Supabase project are required for real sign-in and any endpoint beyond `/health` (see `docs/Revnara_Sprint_Development_Plan.md` §4 Environment & Account Prerequisites). The backend test suite (`pytest`) runs against a local SQLite stand-in instead and does not require this setup — see `backend/tests/README.md`.
 
 ## Status
