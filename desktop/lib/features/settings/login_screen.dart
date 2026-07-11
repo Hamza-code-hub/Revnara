@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_repository.dart';
 import '../../auth/session.dart';
@@ -14,17 +16,41 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isSupabaseConfigured) {
-      return const Scaffold(
-        body: RevnaraEmptyState(
-          icon: Icons.cloud_off,
-          title: 'Supabase is not configured',
-          message:
-              'Run with --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... '
-              'to enable sign-in (see docs/Revnara_Sprint_Development_Plan.md §4).',
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const RevnaraEmptyState(
+                icon: Icons.cloud_off,
+                title: 'Supabase is not configured',
+                message:
+                    'Run with --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... '
+                    'to enable sign-in (see docs/Revnara_Sprint_Development_Plan.md §4).',
+              ),
+              // Debug-only, one-click way to see the design system without
+              // Supabase configured or typing a route by hand (desktop has
+              // no URL bar) -- originally added in Sprint 1
+              // (placeholder_login_screen.dart) and re-added here since
+              // Sprint 2 replaced that placeholder with this real screen.
+              if (kDebugMode) ...[
+                const SizedBox(height: RevnaraSpacing.lg),
+                RevnaraButton(
+                  label: 'View component gallery',
+                  variant: RevnaraButtonVariant.secondary,
+                  onPressed: () => context.go('/dev/gallery'),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }
 
+    // No component-gallery shortcut here -- that debug convenience only
+    // matters when there's nothing else to see (the "not configured"
+    // fallback above). Once real sign-in is available, a developer can
+    // just log in and see the actual app.
     return const Scaffold(body: Center(child: LoginForm()));
   }
 }

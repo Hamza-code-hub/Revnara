@@ -18,8 +18,10 @@ final meProvider = FutureProvider<MeResponse?>((ref) async {
 
   final activeMemberships = me.memberships.where((m) => m.status == 'active');
   if (activeMemberships.isNotEmpty) {
-    ref.read(activeOrganizationIdProvider.notifier).state =
-        activeMemberships.first.organizationId;
+    final newOrganizationId = activeMemberships.first.organizationId;
+    if (ref.read(activeOrganizationIdProvider) != newOrganizationId) {
+      ref.read(activeOrganizationIdProvider.notifier).state = newOrganizationId;
+    }
   }
 
   return me;

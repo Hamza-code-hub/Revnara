@@ -1,7 +1,7 @@
 -- Sprint 4 (Company Brain, DB4.2): private bucket for tenant file uploads.
--- Not yet applied against a real Supabase project (see supabase/README.md's
--- "Not yet initialized" section) -- run this once one exists, the same way
--- supabase/rls/*.sql is applied once migrations have run.
+-- Run this once against a real Supabase project's database (via the
+-- project's admin/postgres role), the same way supabase/rls/*.sql is
+-- applied once migrations have run.
 
 insert into storage.buckets (id, name, public)
 values ('company-files', 'company-files', false)
@@ -36,7 +36,10 @@ on conflict (id) do nothing;
 -- controls which paths a signed URL can ever be issued for, and nothing
 -- else can reach the bucket at all.
 
-alter table storage.objects enable row level security;
--- Deliberately no CREATE POLICY statements below this line for the
--- company-files bucket -- see the comment above. Do not add a permissive
--- policy here without re-reading it first.
+-- No `alter table storage.objects enable row level security` here --
+-- Supabase itself owns and already manages RLS on storage.objects
+-- (owned by their internal supabase_storage_admin role, not reachable
+-- even from the project's own postgres/admin role). Deliberately no
+-- CREATE POLICY statements for the company-files bucket either -- see
+-- the comment above. Do not add a permissive policy here without
+-- re-reading it first.

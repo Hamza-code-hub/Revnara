@@ -1,3 +1,10 @@
+# Local dart-define values (Supabase URL/anon key for `flutter run
+# --dart-define-from-file=dart_define.local.json`) -- never committed, even
+# though the anon key itself is meant to be public-safe, since this file
+# could otherwise sync via IDE settings-sync or get pasted elsewhere by
+# habit. See dart_define.local.json.example for the template.
+dart_define.local.json
+
 # Miscellaneous
 *.class
 *.log

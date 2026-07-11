@@ -12,14 +12,13 @@ Supabase is the **managed data platform** this product runs on: PostgreSQL, Auth
 - `seeds/` — Local/staging seed data (`dev_seed.sql` etc.), introduced starting Sprint 2.
 - `config/` — Supabase CLI project configuration, linking this repo to the `revnara-local`/`revnara-staging`/`revnara-prod` projects (Auth provider settings, Storage bucket policy, etc. — platform configuration Alembic has no concept of). `storage_buckets.sql` (Sprint 4) provisions the private `company-files` bucket used by `app/files/storage.py`.
 
-## Not yet initialized
+## Real project (Sprint 4 onward)
 
-This requires the Supabase CLI (not installed in the environment this scaffold was created in) and real Supabase project credentials — both Sprint 1 / §4 Environment Prerequisites tasks:
+A real Supabase project (`nbnmlfsxtiivvvoxuhdr`, dev/local use) is connected as of Sprint 4 -- migrations, every `rls/*.sql` file, and `config/storage_buckets.sql` have all been applied against it, and the whole request path (real Supabase Auth sign-in -> JWKS-verified JWT -> Postgres via a dedicated non-bypassrls `revnara_app` role -> RLS-enforced tenant isolation -> real Storage upload) has been verified end to end against it, not just locally.
 
-```bash
-# once the Supabase CLI is installed and you're logged in:
-supabase init
-supabase link --project-ref <revnara-staging-project-ref>
-```
+Two things worth knowing about this project's setup that aren't obvious from the SQL files alone:
 
-See `docs/Revnara_Sprint_Development_Plan.md` §4 for the full environment/account checklist.
+- **The default `postgres` connection role has `rolbypassrls = true`** (even though it isn't a superuser) -- it silently bypasses every RLS policy, the same pitfall Sprint 3 hit locally. A dedicated `revnara_app` role (`LOGIN`, `NOSUPERUSER`, `NOBYPASSRLS`) was created and granted `CREATE`/`USAGE` on schema `public` plus `ALTER DEFAULT PRIVILEGES` (so future Alembic-created tables are automatically usable by it) -- this is the role the backend's `DATABASE_URL` actually connects as. Any admin-only task (Storage schema setup, role management) needs the project's `postgres` role instead, since `revnara_app` intentionally has no access to the `storage` schema.
+- **This project uses asymmetric JWT signing (ECC P-256 via JWKS)**, not the legacy HS256 shared secret -- see `docs/adr/0007-jwt-verification.md`, now Final. `backend/app/auth/jwt.py` verifies against whichever the token's own `alg` header says, so this isn't a hardcoded assumption.
+
+The Supabase CLI itself (`supabase init`/`supabase link`) is still not set up in this environment -- everything above was done via direct SQL against the project's Postgres connection and Supabase's REST/Admin APIs, which is equally valid but means `supabase/config/` has no CLI-generated project link file yet. See `docs/Revnara_Sprint_Development_Plan.md` §4 for the full environment/account checklist if that's still wanted.

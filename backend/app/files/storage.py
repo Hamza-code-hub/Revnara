@@ -49,14 +49,13 @@ class SupabaseStorageProvider(StorageProvider):
     """Calls Supabase Storage's real signed-upload-url REST API
     (`POST /storage/v1/object/upload/sign/{bucket}/{path}`).
 
-    Not exercised end-to-end anywhere in this codebase -- like Sprint 2's
-    Supabase Auth integration, there is no real Supabase project available
-    in this environment to verify the HTTP call against (see
-    docs/Revnara_Sprint_Development_Plan.md §4 Environment Prerequisites).
-    Path construction and metadata handling (the part the backend fully
-    controls, [build_tenant_storage_path]/app/files/service.py) are unit
-    tested directly; this class's HTTP call is mocked in tests rather than
-    asserted against a real response body.
+    Verified end-to-end (Sprint 4) against a real Supabase project: the
+    create-signed-URL call, and a real PUT of file bytes to the resulting
+    URL, both succeed. The response's `url` field is relative to the
+    Storage API root (`/storage/v1`), not the bare project domain --
+    prepending only `base_url` without that segment produces a URL that
+    404s with "requested path is invalid", caught by actually performing
+    the PUT rather than only asserting the URL was constructed.
     """
 
     def __init__(self, *, base_url: str, service_role_key: str) -> None:
@@ -72,5 +71,5 @@ class SupabaseStorageProvider(StorageProvider):
             response.raise_for_status()
             data = response.json()
             return SignedUpload(
-                upload_url=f"{self._base_url}{data['url']}", token=data["token"]
+                upload_url=f"{self._base_url}/storage/v1{data['url']}", token=data["token"]
             )
