@@ -5,31 +5,22 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.audit.models import ActorType, AuditOutcome
+from app.audit.writer import write_audit_event
 from app.database import get_db_session
+from app.organizations.authorization import require_permission
 from app.organizations.models import MemberStatus, OrganizationMember, Role, User
 from app.organizations.schemas import InvitationCreate, MemberRead, MemberRoleUpdate
 from app.tenancy.context import TenantContext
 from app.tenancy.middleware import resolve_tenant_context
+from app.tenancy.repository import scoped_to_tenant
 
 router = APIRouter(tags=["organization-members"])
 
 
-def _require_permission(tenant: TenantContext, permission_key: str) -> None:
-    """Inline permission check for Sprint 2 -- Sprint 3 formalizes this
-    into a shared `require_permission` FastAPI dependency (per the sprint
-    plan); this function is written so that formalization is a
-    call-site-only change, not a rewrite of the check itself.
-    """
-    if not tenant.has_permission(permission_key):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Missing permission: {permission_key}",
-        )
-
-
 async def _get_role_by_name(db: AsyncSession, *, tenant_id: uuid.UUID, name: str) -> Role:
     result = await db.execute(
-        select(Role).where(Role.tenant_id == tenant_id, Role.name == name)
+        scoped_to_tenant(select(Role), Role, tenant_id).where(Role.name == name)
     )
     role = result.scalar_one_or_none()
     if role is None:
@@ -48,10 +39,9 @@ async def _get_role_by_name(db: AsyncSession, *, tenant_id: uuid.UUID, name: str
 async def invite_member(
     organization_id: uuid.UUID,
     payload: InvitationCreate,
-    tenant: TenantContext = Depends(resolve_tenant_context),
+    tenant: TenantContext = Depends(require_permission("members.invite")),
     db: AsyncSession = Depends(get_db_session),
 ) -> MemberRead:
-    _require_permission(tenant, "members.invite")
     if organization_id != tenant.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant mismatch.")
 
@@ -77,6 +67,15 @@ async def invite_member(
     # the durable state; wiring the email send is a follow-up once a real
     # Supabase project exists (§4 Environment Prerequisites).
 
+    await write_audit_event(
+        db,
+        tenant_id=organization_id,
+        actor_type=ActorType.USER,
+        actor_id=tenant.user_id,
+        action_type="member.invite",
+        outcome=AuditOutcome.EXECUTED,
+    )
+
     return MemberRead(
         id=member.id,
         user_id=member.user_id,
@@ -100,12 +99,10 @@ async def list_members(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant mismatch.")
 
     result = await db.execute(
-        select(OrganizationMember)
-        .options(
+        scoped_to_tenant(select(OrganizationMember), OrganizationMember, organization_id).options(
             selectinload(OrganizationMember.role),
             selectinload(OrganizationMember.user),
         )
-        .where(OrganizationMember.tenant_id == organization_id)
     )
     members = result.scalars().all()
     return [
@@ -129,16 +126,24 @@ async def update_member_role(
     organization_id: uuid.UUID,
     member_id: uuid.UUID,
     payload: MemberRoleUpdate,
-    tenant: TenantContext = Depends(resolve_tenant_context),
+    tenant: TenantContext = Depends(require_permission("members.manage_roles")),
     db: AsyncSession = Depends(get_db_session),
 ) -> MemberRead:
-    _require_permission(tenant, "members.manage_roles")
     member = await _get_member_or_404(db, organization_id=organization_id, member_id=member_id)
 
     role = await _get_role_by_name(db, tenant_id=organization_id, name=payload.role_name)
     member.role_id = role.id
     member.version += 1
     await db.flush()
+
+    await write_audit_event(
+        db,
+        tenant_id=organization_id,
+        actor_type=ActorType.USER,
+        actor_id=tenant.user_id,
+        action_type="member.role_change",
+        outcome=AuditOutcome.EXECUTED,
+    )
 
     return MemberRead(
         id=member.id,
@@ -157,7 +162,7 @@ async def update_member_role(
 async def deactivate_member(
     organization_id: uuid.UUID,
     member_id: uuid.UUID,
-    tenant: TenantContext = Depends(resolve_tenant_context),
+    tenant: TenantContext = Depends(require_permission("members.remove")),
     db: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Soft-deactivates a member -- never a hard delete of a user who has
@@ -167,24 +172,29 @@ async def deactivate_member(
     requirement is actually enforced -- see
     tests/unit/test_tenancy_context.py.
     """
-    _require_permission(tenant, "members.remove")
     member = await _get_member_or_404(db, organization_id=organization_id, member_id=member_id)
 
     member.status = MemberStatus.DEACTIVATED
     member.version += 1
     await db.flush()
 
+    await write_audit_event(
+        db,
+        tenant_id=organization_id,
+        actor_type=ActorType.USER,
+        actor_id=tenant.user_id,
+        action_type="member.deactivate",
+        outcome=AuditOutcome.EXECUTED,
+    )
+
 
 async def _get_member_or_404(
     db: AsyncSession, *, organization_id: uuid.UUID, member_id: uuid.UUID
 ) -> OrganizationMember:
     result = await db.execute(
-        select(OrganizationMember)
+        scoped_to_tenant(select(OrganizationMember), OrganizationMember, organization_id)
         .options(selectinload(OrganizationMember.user))
-        .where(
-            OrganizationMember.id == member_id,
-            OrganizationMember.tenant_id == organization_id,
-        )
+        .where(OrganizationMember.id == member_id)
     )
     member = result.scalar_one_or_none()
     if member is None:

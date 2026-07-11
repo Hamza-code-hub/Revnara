@@ -24,6 +24,10 @@ class Settings(BaseSettings):
 
     sentry_dsn: str = ""
 
+    # BE3.6 tenant-aware rate limiting -- technical abuse protection,
+    # independent of Sprint 15.6's plan-based entitlement limits.
+    tenant_rate_limit_per_minute: int = 300
+
 
 @lru_cache
 def get_settings() -> Settings:

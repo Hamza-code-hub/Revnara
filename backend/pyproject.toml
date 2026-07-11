@@ -52,6 +52,10 @@ extend-immutable-calls = [
     "fastapi.Body",
     "fastapi.Cookie",
     "fastapi.Security",
+    # require_permission is a dependency *factory* (BE3.1) -- it must be
+    # called per-route with a specific permission string, so it can't be
+    # a fixed module-level singleton the way a plain Depends target can.
+    "app.organizations.authorization.require_permission",
 ]
 
 [tool.mypy]

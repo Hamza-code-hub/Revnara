@@ -5,11 +5,14 @@ from fastapi import FastAPI
 from app.config import get_settings
 from app.organizations.invitations import router as members_router
 from app.organizations.router import router as organizations_router
+from app.tenancy.rate_limit import TenantRateLimitMiddleware
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
+
+    app.add_middleware(TenantRateLimitMiddleware)
 
     @app.get("/health")
     def health() -> dict[str, str]:

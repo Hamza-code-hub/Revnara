@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Uuid
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -118,6 +118,9 @@ class Permission(Base):
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
+    __table_args__ = (
+        UniqueConstraint("role_id", "permission_id", name="uq_role_permission"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     role_id: Mapped[uuid.UUID] = mapped_column(
@@ -135,7 +138,7 @@ class OrganizationMember(Base, TenantScopedColumns):
     __tablename__ = "organization_members"
 
     user_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid, ForeignKey("users.id"), nullable=True
+        Uuid, ForeignKey("users.id"), index=True, nullable=True
     )
     role_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("roles.id"), nullable=False)
     status: Mapped[MemberStatus] = mapped_column(

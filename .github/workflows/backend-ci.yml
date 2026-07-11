@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "supabase/**"
       - ".github/workflows/backend-ci.yml"
   pull_request:
     paths:
       - "backend/**"
+      - "supabase/**"
       - ".github/workflows/backend-ci.yml"
 
 concurrency:
@@ -81,6 +83,85 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d revnara -f ../supabase/seeds/dev_seed.sql
+
+  # DQ3.1: the RLS/tenant-isolation suite (backend/tests/rls/) against a
+  # real Postgres, required on every PR -- this is the one test category
+  # in this repo that cannot be verified against SQLite at all (see
+  # docs/rls-pattern.md). Deliberately a *separate* job from
+  # migration-check: connects as a dedicated non-superuser role, since a
+  # superuser bypasses RLS (and FORCE ROW LEVEL SECURITY) entirely and
+  # would make these tests pass for the wrong reason -- discovered by
+  # actually running this locally, not assumed from documentation.
+  rls-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGPASSWORD: postgres
+      APP_DATABASE_URL: postgresql+asyncpg://revnara_app@localhost:5432/revnara_rls_test
+      RLS_TEST_DATABASE_URL: postgresql+asyncpg://revnara_app@localhost:5432/revnara_rls_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Create the non-superuser app role and its database
+        run: |
+          psql -h localhost -U postgres -d postgres -c "CREATE ROLE revnara_app LOGIN;"
+          psql -h localhost -U postgres -d postgres -c "CREATE DATABASE revnara_rls_test OWNER revnara_app;"
+
+      - name: Apply migrations as the app role (never as postgres/superuser)
+        env:
+          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
+        run: alembic upgrade head
+
+      - name: Apply every RLS policy file as the app role
+        run: |
+          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events; do
+            psql -h localhost -U revnara_app -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/rls/${f}.sql"
+          done
+
+      - name: Confirm every tenant-scoped table actually has RLS enabled
+        run: |
+          psql -h localhost -U postgres -d revnara_rls_test -v ON_ERROR_STOP=1 -f - <<'EOF'
+          DO $$
+          DECLARE missing text;
+          BEGIN
+            SELECT string_agg(tablename, ', ') INTO missing
+            FROM pg_tables
+            WHERE schemaname = 'public'
+              AND tablename NOT IN ('alembic_version')
+              AND tablename NOT IN (
+                SELECT tablename FROM pg_tables t
+                JOIN pg_class c ON c.relname = t.tablename
+                WHERE c.relrowsecurity = true
+              );
+            IF missing IS NOT NULL THEN
+              RAISE EXCEPTION 'Table(s) missing RLS entirely: %', missing;
+            END IF;
+          END $$;
+          EOF
+
+      - name: Run the real RLS test suite
+        run: pytest tests/rls -v
 
   docker-build:
     runs-on: ubuntu-latest

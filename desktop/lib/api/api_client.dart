@@ -26,6 +26,7 @@ class ApiClient {
     Dio? dio,
     String? accessToken,
     String? organizationId,
+    this.onForbidden,
   }) : _dio = dio ??
             Dio(BaseOptions(
               baseUrl: apiBaseUrl,
@@ -36,6 +37,15 @@ class ApiClient {
             ));
 
   final Dio _dio;
+
+  /// FE3.1 global 403 handling: called with the server's error message
+  /// whenever any request gets a 403, in addition to the request's own
+  /// call site still receiving an [ApiException] it can show inline
+  /// context for. This is what lets a single top-level listener
+  /// (app/global_error_listener.dart) show a consistent "not authorized"
+  /// toast without every screen needing to remember to handle 403
+  /// specially itself.
+  void Function(String message)? onForbidden;
 
   Future<bool> checkHealth() async {
     try {
@@ -106,7 +116,13 @@ class ApiClient {
       final detail = e.response?.data is Map
           ? (e.response?.data as Map)['detail']
           : e.message;
-      throw ApiException(e.response?.statusCode, detail?.toString() ?? 'Request failed');
+      final message = detail?.toString() ?? 'Request failed';
+
+      if (e.response?.statusCode == 403) {
+        onForbidden?.call(message);
+      }
+
+      throw ApiException(e.response?.statusCode, message);
     }
   }
 }
@@ -114,8 +130,19 @@ class ApiClient {
 final apiClientProvider = Provider<ApiClient>((ref) {
   final session = ref.watch(currentSessionProvider);
   final organizationId = ref.watch(activeOrganizationIdProvider);
-  return ApiClient(accessToken: session?.accessToken, organizationId: organizationId);
+  return ApiClient(
+    accessToken: session?.accessToken,
+    organizationId: organizationId,
+    onForbidden: (message) =>
+        ref.read(unauthorizedEventProvider.notifier).state = message,
+  );
 });
+
+/// FE3.1: set (with a fresh message) every time any request anywhere
+/// gets a 403. app/global_error_listener.dart shows a toast whenever
+/// this changes -- a screen-crash-proof, consistent "not authorized"
+/// state instead of each screen needing its own 403 handling.
+final unauthorizedEventProvider = StateProvider<String?>((ref) => null);
 
 /// The organization the app is currently operating in -- explicit state,
 /// never inferred, mirroring the backend's X-Organization-Id requirement

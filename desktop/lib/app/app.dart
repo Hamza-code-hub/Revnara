@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../shared/design_system/theme.dart';
+import 'global_error_listener.dart';
 import 'router.dart';
 import 'theme_mode_provider.dart';
 
@@ -21,6 +22,11 @@ class RevnaraApp extends ConsumerWidget {
       theme: RevnaraTheme.light(),
       darkTheme: RevnaraTheme.dark(),
       themeMode: themeMode,
+      // FE3.1: wraps every routed screen so a 403 anywhere shows a
+      // consistent toast instead of a screen crashing or silently doing
+      // nothing -- see global_error_listener.dart.
+      builder: (context, child) =>
+          GlobalErrorListener(child: child ?? const SizedBox.shrink()),
       // i18n scaffolded from day one (FE1.5) even though only English ships
       // in Release 1 — see the sprint plan for the rationale.
       localizationsDelegates: const [

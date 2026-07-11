@@ -101,3 +101,42 @@ async def test_create_organization_rolls_back_atomically_on_mid_transaction_fail
         select(Organization).where(Organization.name == "Should Not Persist")
     )
     assert result.scalar_one_or_none() is None
+
+
+@pytest.mark.asyncio
+async def test_organization_creation_fails_closed_when_audit_write_fails(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """BE3.4/Enforcement Spec Core Rule #12, at the integration level: if
+    the audit event write fails, the entire action it was recording --
+    here, organization creation -- must fail closed too, not partially
+    succeed with an unrecorded action. This is the same rollback
+    mechanism as the test above, specifically targeting the audit
+    writer's own flush call (the 5th: permission catalog, organization,
+    roles, owner membership, then the audit event) rather than an
+    arbitrary earlier one.
+    """
+    call_count = {"n": 0}
+    original_flush = db_session.flush
+
+    async def flaky_flush() -> None:
+        call_count["n"] += 1
+        if call_count["n"] == 5:
+            raise RuntimeError("Simulated audit write failure")
+        await original_flush()
+
+    monkeypatch.setattr(db_session, "flush", flaky_flush)
+
+    response = await client.post(
+        "/organizations",
+        json={"name": "Should Not Persist Either"},
+        headers=auth_headers(),
+    )
+
+    assert response.status_code == 500
+
+    monkeypatch.setattr(db_session, "flush", original_flush)
+    result = await db_session.execute(
+        select(Organization).where(Organization.name == "Should Not Persist Either")
+    )
+    assert result.scalar_one_or_none() is None

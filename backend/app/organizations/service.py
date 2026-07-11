@@ -14,6 +14,7 @@ from app.organizations.models import (
     Workspace,
 )
 from app.organizations.permissions_catalog import DEFAULT_ROLE_PERMISSIONS, PERMISSIONS
+from app.tenancy.pg_session import set_pg_tenant_context
 
 
 async def ensure_permission_catalog(db: AsyncSession) -> dict[str, Permission]:
@@ -49,6 +50,13 @@ async def create_organization(
     organization = Organization(name=name, created_by=creator_user_id)
     db.add(organization)
     await db.flush()  # assigns organization.id
+
+    # From here on, RLS scopes every insert in this bootstrap flow to the
+    # organization that was just created -- the actor was already set by
+    # the caller (router.py) before this function ran; only the tenant
+    # half was missing until this exact point, since the tenant didn't
+    # exist yet.
+    await set_pg_tenant_context(db, organization.id)
 
     workspace = Workspace(
         tenant_id=organization.id,
