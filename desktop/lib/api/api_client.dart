@@ -435,6 +435,145 @@ class ApiClient {
     return CsvImportResult.fromJson(response.data as Map<String, dynamic>);
   }
 
+  // --- Sprint 7: Qualification, Team Matching & Pipeline UI --------------
+
+  Future<Opportunity> updateOpportunityStatus(
+    String organizationId,
+    String opportunityId, {
+    required String newStatus,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/opportunities/$opportunityId/status',
+          data: {'status': newStatus},
+        ));
+    return Opportunity.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<QualificationResult> qualifyOpportunity(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    final response = await _guarded(() => _dio
+        .post('/organizations/$organizationId/opportunities/$opportunityId/qualify'));
+    return QualificationResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<QualificationResult?> getQualificationResult(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    try {
+      final response = await _guarded(() =>
+          _dio.get('/organizations/$organizationId/opportunities/$opportunityId/qualification'));
+      return QualificationResult.fromJson(response.data as Map<String, dynamic>);
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<ExplainabilityRecord?> getQualificationExplainability(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    try {
+      final response = await _guarded(() => _dio.get(
+          '/organizations/$organizationId/opportunities/$opportunityId/qualification/explainability'));
+      return ExplainabilityRecord.fromJson(response.data as Map<String, dynamic>);
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<QualificationResult> overrideQualification(
+    String organizationId,
+    String opportunityId, {
+    required int score,
+    required String reason,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/opportunities/$opportunityId/qualification',
+          data: {'score': score, 'reason': reason},
+        ));
+    return QualificationResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<OverrideRecord>> listQualificationOverrides(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    final response = await _guarded(() => _dio.get(
+        '/organizations/$organizationId/opportunities/$opportunityId/qualification/overrides'));
+    return (response.data as List)
+        .map((e) => OverrideRecord.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<TeamMatchResult> matchTeamForOpportunity(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    final response = await _guarded(() => _dio
+        .post('/organizations/$organizationId/opportunities/$opportunityId/match-team'));
+    return TeamMatchResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<TeamMatchResult?> getTeamMatchResult(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    try {
+      final response = await _guarded(() =>
+          _dio.get('/organizations/$organizationId/opportunities/$opportunityId/team-match'));
+      return TeamMatchResult.fromJson(response.data as Map<String, dynamic>);
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<ExplainabilityRecord?> getTeamMatchExplainability(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    try {
+      final response = await _guarded(() => _dio.get(
+          '/organizations/$organizationId/opportunities/$opportunityId/team-match/explainability'));
+      return ExplainabilityRecord.fromJson(response.data as Map<String, dynamic>);
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<TeamMatchResult> overrideTeamMatch(
+    String organizationId,
+    String opportunityId, {
+    required List<String> recommendedTeamMemberIds,
+    required String reason,
+  }) async {
+    final response = await _guarded(() => _dio.patch(
+          '/organizations/$organizationId/opportunities/$opportunityId/team-match',
+          data: {
+            'recommended_team_member_ids': recommendedTeamMemberIds,
+            'reason': reason,
+          },
+        ));
+    return TeamMatchResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<OverrideRecord>> listTeamMatchOverrides(
+    String organizationId,
+    String opportunityId,
+  ) async {
+    final response = await _guarded(() => _dio
+        .get('/organizations/$organizationId/opportunities/$opportunityId/team-match/overrides'));
+    return (response.data as List)
+        .map((e) => OverrideRecord.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Response> _guarded(Future<Response> Function() request) async {
     try {
       return await request();

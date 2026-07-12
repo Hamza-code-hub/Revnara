@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,19 @@ import 'package:go_router/go_router.dart';
 import '../../api/api_client.dart';
 import '../../api/models.dart';
 import '../../shared/design_system/design_system.dart';
+
+/// FE7.5: real client-side Supabase Realtime was investigated and
+/// rejected for now -- verified for real that the `authenticated`
+/// Postgres role Realtime connects as has zero table grants (only the
+/// backend's dedicated `revnara_app` role can touch data at all), and
+/// even with grants our RLS policies check custom session variables the
+/// backend sets per-request, not Supabase's standard `auth.uid()`.
+/// Enabling real Realtime would mean granting direct table access to a
+/// client-reachable role and adding a parallel RLS path -- a genuine
+/// security-posture change, not a quick addition, so it's deferred as
+/// its own decision. Polling is the honest interim: it actually works
+/// against the real backend today.
+const _pollInterval = Duration(seconds: 20);
 
 Color _statusColor(BuildContext context, String status) {
   switch (status) {
@@ -35,19 +50,30 @@ class _OpportunityListScreenState extends ConsumerState<OpportunityListScreen> {
   List<Opportunity>? _opportunities;
   String? _error;
   bool _isLoading = true;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _load(silent: true));
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   String? get _organizationId => ref.read(activeOrganizationIdProvider);
 
-  Future<void> _load() async {
+  /// [silent]: the periodic poll refreshes data in the background without
+  /// flashing the full-screen loading spinner every 20 seconds -- only
+  /// the initial load and manual pull-to-refresh show it.
+  Future<void> _load({bool silent = false}) async {
     final organizationId = _organizationId;
     if (organizationId == null) return;
-    setState(() => _isLoading = true);
+    if (!silent) setState(() => _isLoading = true);
     try {
       final opportunities = await ref.read(apiClientProvider).listOpportunities(organizationId);
       setState(() {

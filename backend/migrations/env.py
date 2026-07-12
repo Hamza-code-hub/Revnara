@@ -29,6 +29,7 @@ config.set_main_option("sqlalchemy.url", get_settings().database_url)
 from app.audit import models as _audit_models  # noqa: E402, F401
 from app.company import models as _company_models  # noqa: E402, F401
 from app.database import Base  # noqa: E402
+from app.explainability import models as _explainability_models  # noqa: E402, F401
 from app.files import models as _files_models  # noqa: E402, F401
 from app.opportunities import models as _opportunities_models  # noqa: E402, F401
 from app.organizations import models as _organizations_models  # noqa: E402, F401

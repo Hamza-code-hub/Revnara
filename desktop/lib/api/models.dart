@@ -425,6 +425,133 @@ class CsvImportResult {
   }
 }
 
+// Sprint 7 (Qualification, Team Matching & Pipeline UI) models, mirroring
+// backend/app/opportunities/schemas.py and app/explainability/schemas.py.
+
+class QualificationResult {
+  QualificationResult({
+    required this.id,
+    required this.opportunityId,
+    required this.score,
+    required this.reasons,
+    required this.evidence,
+    required this.missingInfo,
+  });
+
+  final String id;
+  final String opportunityId;
+  final int score;
+  final List<String> reasons;
+  final List<String> evidence;
+  final List<String> missingInfo;
+
+  factory QualificationResult.fromJson(Map<String, dynamic> json) {
+    return QualificationResult(
+      id: json['id'] as String,
+      opportunityId: json['opportunity_id'] as String,
+      score: json['score'] as int,
+      reasons: (json['reasons'] as List).map((e) => e as String).toList(),
+      evidence: (json['evidence'] as List).map((e) => e as String).toList(),
+      missingInfo: (json['missing_info'] as List).map((e) => e as String).toList(),
+    );
+  }
+}
+
+class TeamMatchResult {
+  TeamMatchResult({
+    required this.id,
+    required this.opportunityId,
+    required this.recommendedTeamMemberIds,
+    required this.deliveryRisk,
+    this.estimatedWeeklyCost,
+    this.estimatedCostCurrency,
+    required this.gaps,
+    required this.reasons,
+    required this.evidence,
+  });
+
+  final String id;
+  final String opportunityId;
+  final List<String> recommendedTeamMemberIds;
+  final String deliveryRisk;
+  final double? estimatedWeeklyCost;
+  final String? estimatedCostCurrency;
+  final List<String> gaps;
+  final List<String> reasons;
+  final List<String> evidence;
+
+  factory TeamMatchResult.fromJson(Map<String, dynamic> json) {
+    return TeamMatchResult(
+      id: json['id'] as String,
+      opportunityId: json['opportunity_id'] as String,
+      recommendedTeamMemberIds:
+          (json['recommended_team_member_ids'] as List).map((e) => e as String).toList(),
+      deliveryRisk: json['delivery_risk'] as String,
+      estimatedWeeklyCost: (json['estimated_weekly_cost'] as num?)?.toDouble(),
+      estimatedCostCurrency: json['estimated_cost_currency'] as String?,
+      gaps: (json['gaps'] as List).map((e) => e as String).toList(),
+      reasons: (json['reasons'] as List).map((e) => e as String).toList(),
+      evidence: (json['evidence'] as List).map((e) => e as String).toList(),
+    );
+  }
+}
+
+class ExplainabilityRecord {
+  ExplainabilityRecord({
+    required this.decision,
+    required this.evidence,
+    required this.rulesApplied,
+    required this.confidence,
+    required this.missingData,
+  });
+
+  final String decision;
+  final List<String> evidence;
+  final List<String> rulesApplied;
+  final double confidence;
+  final List<String> missingData;
+
+  factory ExplainabilityRecord.fromJson(Map<String, dynamic> json) {
+    return ExplainabilityRecord(
+      decision: json['decision'] as String,
+      evidence: (json['evidence'] as List).map((e) => e as String).toList(),
+      rulesApplied: (json['rules_applied'] as List).map((e) => e as String).toList(),
+      confidence: (json['confidence'] as num).toDouble(),
+      missingData: (json['missing_data'] as List).map((e) => e as String).toList(),
+    );
+  }
+}
+
+/// FE7.2b: what powers the "adjusted by [person]" indicator.
+class OverrideRecord {
+  OverrideRecord({
+    required this.field,
+    required this.originalValue,
+    required this.newValue,
+    required this.reason,
+    this.createdBy,
+    required this.createdAt,
+  });
+
+  final String field;
+  final dynamic originalValue;
+  final dynamic newValue;
+  final String reason;
+  final String? createdBy;
+  final DateTime createdAt;
+
+  factory OverrideRecord.fromJson(Map<String, dynamic> json) {
+    return OverrideRecord(
+      field: json['field'] as String,
+      originalValue: json['original_value'],
+      newValue: json['new_value'],
+      reason: json['reason'] as String,
+      createdBy: json['created_by'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+}
+
 /// FE5.1's debug-only search preview widget result -- mirrors
 /// backend/app/rag/schemas.py's KnowledgeSearchResultItem.
 class KnowledgeSearchResult {

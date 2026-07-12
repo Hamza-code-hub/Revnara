@@ -3,7 +3,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Numeric, String, Text, Uuid
+from sqlalchemy import JSON, DateTime, ForeignKey, Numeric, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -122,3 +122,45 @@ class Opportunity(Base, TenantScopedColumns):
 
     client: Mapped[Client | None] = relationship()
     source: Mapped[OpportunitySource] = relationship()
+
+
+class QualificationResult(Base, TenantScopedColumns):
+    """Sprint 7 (BE7.1/DB7.1, ADR 0008): the current qualification score
+    for an opportunity. One row per opportunity -- re-running qualify
+    replaces it (upsert), it does not keep a history of past runs; see
+    docs/adr/0008-qualification-storage.md."""
+
+    __tablename__ = "qualification_results"
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", name="uq_qualification_result_opportunity"),
+    )
+
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("opportunities.id"), nullable=False
+    )
+    score: Mapped[int] = mapped_column(nullable=False)
+    reasons: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    evidence: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    missing_info: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+
+
+class TeamMatchResult(Base, TenantScopedColumns):
+    """Sprint 7 (BE7.3/DB7.1, ADR 0008): the current team-match
+    recommendation for an opportunity. Same one-row-per-opportunity
+    upsert shape as [QualificationResult]."""
+
+    __tablename__ = "team_match_results"
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", name="uq_team_match_result_opportunity"),
+    )
+
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("opportunities.id"), nullable=False
+    )
+    recommended_team_member_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    delivery_risk: Mapped[str] = mapped_column(String(20), nullable=False)
+    estimated_weekly_cost: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    estimated_cost_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    gaps: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    reasons: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    evidence: Mapped[list[str]] = mapped_column(JSON, nullable=False)

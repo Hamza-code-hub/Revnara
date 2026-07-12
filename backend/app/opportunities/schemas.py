@@ -85,3 +85,48 @@ class CsvImportRowError(BaseModel):
 class CsvImportResult(BaseModel):
     created: list[OpportunityRead]
     errors: list[CsvImportRowError]
+
+
+# Sprint 7 (Qualification, Team Matching & Pipeline UI) schemas.
+
+
+class QualificationResultRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    opportunity_id: uuid.UUID
+    score: int
+    reasons: list[str]
+    evidence: list[str]
+    missing_info: list[str]
+
+
+class TeamMatchResultRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    opportunity_id: uuid.UUID
+    recommended_team_member_ids: list[uuid.UUID]
+    delivery_risk: str
+    estimated_weekly_cost: float | None
+    estimated_cost_currency: str | None
+    gaps: list[str]
+    reasons: list[str]
+    evidence: list[str]
+
+
+class OpportunityStatusUpdate(BaseModel):
+    status: OpportunityStatus
+
+
+class QualificationOverride(BaseModel):
+    """BE7.6: overriding a score always requires a stated reason -- there
+    is no endpoint shape that allows a bare silent edit."""
+
+    score: int = Field(ge=0, le=100)
+    reason: str = Field(min_length=1)
+
+
+class TeamMatchOverride(BaseModel):
+    recommended_team_member_ids: list[uuid.UUID]
+    reason: str = Field(min_length=1)

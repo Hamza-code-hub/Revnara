@@ -76,7 +76,11 @@ async def create_team_member(
     await db.flush()
     if skill_ids:
         await sync_team_member_skills(db, team_member_id=member.id, skill_ids=skill_ids)
-        await db.refresh(member, attribute_names=["skills"])
+    # Always refresh, even with zero skills -- TeamMemberRead always reads
+    # `.skills`, and skipping this when skill_ids is empty left it
+    # unloaded, causing an unawaited lazy-load (MissingGreenlet) the
+    # first time a team member was ever created with no skills at all.
+    await db.refresh(member, attribute_names=["skills"])
     return member
 
 
