@@ -23,6 +23,11 @@ dependencies = [
     "pgvector>=0.3",
     "pypdf>=5.0",
     "python-docx>=1.1",
+    # Sprint 6 (Opportunity Intake): CSV import is a multipart/form-data
+    # file upload (app/opportunities/router.py's UploadFile) -- FastAPI's
+    # form/file parsing needs this at runtime even though nothing imports
+    # it directly.
+    "python-multipart>=0.0.12",
 ]
 
 [project.optional-dependencies]

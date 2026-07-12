@@ -23,6 +23,11 @@ class CommandCenterScreen extends ConsumerWidget {
         title: const Text('Revnara'),
         actions: [
           IconButton(
+            tooltip: 'Opportunities',
+            icon: const Icon(Icons.inbox_outlined),
+            onPressed: () => context.go('/opportunities'),
+          ),
+          IconButton(
             tooltip: 'Company profile',
             icon: const Icon(Icons.business_outlined),
             onPressed: () => context.go('/company/profile'),

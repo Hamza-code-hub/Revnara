@@ -342,6 +342,99 @@ class ApiClient {
         .toList();
   }
 
+  // --- Sprint 6: Opportunity Intake & Data Model --------------------------
+
+  Future<List<Opportunity>> listOpportunities(String organizationId) async {
+    final response = await _guarded(() => _dio.get('/organizations/$organizationId/opportunities'));
+    return (response.data as List)
+        .map((e) => Opportunity.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Opportunity> getOpportunity(String organizationId, String opportunityId) async {
+    final response = await _guarded(
+        () => _dio.get('/organizations/$organizationId/opportunities/$opportunityId'));
+    return Opportunity.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<Client> getOpportunityClient(String organizationId, String opportunityId) async {
+    final response = await _guarded(
+        () => _dio.get('/organizations/$organizationId/opportunities/$opportunityId/client'));
+    return Client.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<Opportunity> createOpportunity(
+    String organizationId, {
+    required String title,
+    String? description,
+    String? requirements,
+    double? budgetMin,
+    double? budgetMax,
+    String? budgetCurrency,
+    String? clientName,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/opportunities',
+          data: {
+            'title': title,
+            'description': ?description,
+            'requirements': ?requirements,
+            'budget_min': ?budgetMin,
+            'budget_max': ?budgetMax,
+            'budget_currency': ?budgetCurrency,
+            'client_name': ?clientName,
+          },
+        ));
+    return Opportunity.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// FE6.3: stores the pasted Upwork link + metadata only -- never fetches
+  /// the URL or automates a browser (see backend's OpportunityImportLinkCreate).
+  Future<Opportunity> importOpportunityLink(
+    String organizationId, {
+    required String url,
+    required String title,
+    String? description,
+    double? budgetMin,
+    double? budgetMax,
+    String? budgetCurrency,
+    String? clientName,
+  }) async {
+    final response = await _guarded(() => _dio.post(
+          '/organizations/$organizationId/opportunities/import-link',
+          data: {
+            'url': url,
+            'title': title,
+            'description': ?description,
+            'budget_min': ?budgetMin,
+            'budget_max': ?budgetMax,
+            'budget_currency': ?budgetCurrency,
+            'client_name': ?clientName,
+          },
+        ));
+    return Opportunity.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Takes raw CSV text rather than opening a native file picker -- same
+  /// deferred-dependency tradeoff as CompanyFileUploadWidget's filename
+  /// field (see its docstring); wraps the text as a MultipartFile so the
+  /// real multipart/form-data upload path (and the backend's real parsing)
+  /// is still exercised end to end.
+  Future<CsvImportResult> importOpportunitiesCsv(
+    String organizationId, {
+    required String csvContent,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromString(
+        csvContent,
+        filename: 'opportunities.csv',
+      ),
+    });
+    final response = await _guarded(
+        () => _dio.post('/organizations/$organizationId/opportunities/import', data: formData));
+    return CsvImportResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<Response> _guarded(Future<Response> Function() request) async {
     try {
       return await request();

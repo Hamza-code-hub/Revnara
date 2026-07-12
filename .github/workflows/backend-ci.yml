@@ -146,7 +146,7 @@ jobs:
 
       - name: Apply every RLS policy file as the app role
         run: |
-          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events skills team_members team_member_skills portfolio_items case_studies files knowledge_chunks; do
+          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events skills team_members team_member_skills portfolio_items case_studies files knowledge_chunks clients contacts opportunity_sources opportunities; do
             psql -h localhost -U revnara_app -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/rls/${f}.sql"
           done
 

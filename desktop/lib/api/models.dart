@@ -313,6 +313,118 @@ class SignedUpload {
   }
 }
 
+// Sprint 6 (Opportunity Intake) models, mirroring
+// backend/app/opportunities/schemas.py.
+
+class Client {
+  Client({
+    required this.id,
+    required this.name,
+    this.website,
+    this.industry,
+    this.region,
+    this.researchBrief,
+  });
+
+  final String id;
+  final String name;
+  final String? website;
+  final String? industry;
+  final String? region;
+  final String? researchBrief;
+
+  factory Client.fromJson(Map<String, dynamic> json) {
+    return Client(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      website: json['website'] as String?,
+      industry: json['industry'] as String?,
+      region: json['region'] as String?,
+      researchBrief: json['research_brief'] as String?,
+    );
+  }
+}
+
+class Opportunity {
+  Opportunity({
+    required this.id,
+    this.clientId,
+    required this.sourceId,
+    required this.title,
+    this.description,
+    this.requirements,
+    this.budgetMin,
+    this.budgetMax,
+    this.budgetCurrency,
+    required this.status,
+    required this.safetyScreeningStatus,
+    this.safetyScreeningFlags,
+  });
+
+  final String id;
+  final String? clientId;
+  final String sourceId;
+  final String title;
+  final String? description;
+  final String? requirements;
+  final double? budgetMin;
+  final double? budgetMax;
+  final String? budgetCurrency;
+  final String status;
+  final String safetyScreeningStatus;
+  final List<String>? safetyScreeningFlags;
+
+  factory Opportunity.fromJson(Map<String, dynamic> json) {
+    return Opportunity(
+      id: json['id'] as String,
+      clientId: json['client_id'] as String?,
+      sourceId: json['source_id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      requirements: json['requirements'] as String?,
+      budgetMin: (json['budget_min'] as num?)?.toDouble(),
+      budgetMax: (json['budget_max'] as num?)?.toDouble(),
+      budgetCurrency: json['budget_currency'] as String?,
+      status: json['status'] as String,
+      safetyScreeningStatus: json['safety_screening_status'] as String,
+      safetyScreeningFlags:
+          (json['safety_screening_flags'] as List?)?.map((e) => e as String).toList(),
+    );
+  }
+}
+
+class CsvImportRowError {
+  CsvImportRowError({required this.rowNumber, required this.error});
+
+  final int rowNumber;
+  final String error;
+
+  factory CsvImportRowError.fromJson(Map<String, dynamic> json) {
+    return CsvImportRowError(
+      rowNumber: json['row_number'] as int,
+      error: json['error'] as String,
+    );
+  }
+}
+
+class CsvImportResult {
+  CsvImportResult({required this.created, required this.errors});
+
+  final List<Opportunity> created;
+  final List<CsvImportRowError> errors;
+
+  factory CsvImportResult.fromJson(Map<String, dynamic> json) {
+    return CsvImportResult(
+      created: (json['created'] as List)
+          .map((e) => Opportunity.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      errors: (json['errors'] as List)
+          .map((e) => CsvImportRowError.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
 /// FE5.1's debug-only search preview widget result -- mirrors
 /// backend/app/rag/schemas.py's KnowledgeSearchResultItem.
 class KnowledgeSearchResult {

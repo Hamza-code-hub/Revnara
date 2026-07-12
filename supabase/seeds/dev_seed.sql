@@ -139,4 +139,49 @@ values
   ('11111111-1111-1111-1111-111111111181', '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111171', 'How Acme Cut Inventory Errors by 40%', 'A rebuild of a client''s inventory system.', 'Full narrative of the engagement, approach, and delivery timeline.', 'Inventory discrepancies down 40%, page load time down 60%.', 'public', now(), now(), 1, false),
   ('22222222-2222-2222-2222-222222222291', '22222222-2222-2222-2222-222222222221', '22222222-2222-2222-2222-222222222281', 'Beta''s Analytics Warehouse Rollout', 'Confidential engagement summary -- internal use only.', 'Full narrative restricted to internal reference; not for external proposal citation.', 'Query latency down 70%.', 'confidential', now(), now(), 1, false);
 
+-- Sprint 6 (Opportunity Intake, DB6.5): opportunities.manage permission,
+-- granted to owner AND member roles (unlike company.manage, opportunity
+-- creation is every BD team member's actual job -- see
+-- app/organizations/permissions_catalog.py's DEFAULT_ROLE_PERMISSIONS).
+insert into permissions (id, key, description, created_at)
+values
+  ('99999999-9999-9999-9999-999999999996', 'opportunities.manage', 'Create and import business development opportunities', now());
+
+insert into role_permissions (id, role_id, permission_id, created_at)
+values
+  (gen_random_uuid(), '11111111-1111-1111-1111-111111111121', '99999999-9999-9999-9999-999999999996', now()), -- Acme owner
+  (gen_random_uuid(), '11111111-1111-1111-1111-111111111123', '99999999-9999-9999-9999-999999999996', now()), -- Acme member
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222231', '99999999-9999-9999-9999-999999999996', now()), -- Beta owner
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222233', '99999999-9999-9999-9999-999999999996', now()); -- Beta member
+
+-- Sprint 6 (Opportunity Intake & Data Model, DB6.6): one client/contact
+-- and two opportunities per tenant -- one clean and screened_clear (the
+-- ordinary path), one deliberately worded to trip safety_screening.py's
+-- heuristics and land in screened_flagged (so the "flagged for human
+-- review" path has real seed data to exercise, not just unit tests).
+
+insert into clients (id, tenant_id, name, website, industry, region, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111191', '11111111-1111-1111-1111-111111111111', 'Meridian Retail Group', 'https://meridian-retail-seed.test', 'Retail', 'North America', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222292', '22222222-2222-2222-2222-222222222221', 'Harborlight Financial', 'https://harborlight-seed.test', 'Financial Services', 'EMEA', now(), now(), 1, false);
+
+insert into contacts (id, tenant_id, client_id, name, email, title, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111193', '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111191', 'Dana Whitfield', 'dana@meridian-retail-seed.test', 'VP of Engineering', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222294', '22222222-2222-2222-2222-222222222221', '22222222-2222-2222-2222-222222222292', 'Priya Anand', 'priya@harborlight-seed.test', 'Director of Data Platforms', now(), now(), 1, false);
+
+insert into opportunity_sources (id, tenant_id, source_type, external_id, external_url, raw_metadata, discovered_at, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111192', '11111111-1111-1111-1111-111111111111', 'manual', null, null, null, now(), now(), now(), 1, false),
+  ('11111111-1111-1111-1111-111111111196', '11111111-1111-1111-1111-111111111111', 'upwork_link', null, 'https://www.upwork.com/jobs/~seed-flagged-example', null, now(), now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222293', '22222222-2222-2222-2222-222222222221', 'manual', null, null, null, now(), now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222297', '22222222-2222-2222-2222-222222222221', 'csv_import', null, null, '{"import_batch": "seed"}', now(), now(), now(), 1, false);
+
+insert into opportunities (id, tenant_id, client_id, source_id, title, description, requirements, budget_min, budget_max, budget_currency, status, safety_screening_status, safety_screening_flags, created_by, created_at, updated_at, version, legal_hold)
+values
+  ('11111111-1111-1111-1111-111111111194', '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111191', '11111111-1111-1111-1111-111111111192', 'Inventory Sync Platform Rebuild', 'Replace a legacy inventory sync job with a real-time Flutter + FastAPI platform across 40 stores.', 'Must integrate with existing POS hardware and support offline-first store terminals.', 40000.00, 65000.00, 'USD', 'qualified', 'screened_clear', null, '11111111-1111-1111-1111-111111111131', now(), now(), 1, false),
+  ('11111111-1111-1111-1111-111111111195', '11111111-1111-1111-1111-111111111111', null, '11111111-1111-1111-1111-111111111196', 'Wire Transfer Only Required - Urgent, Start Today', 'Payment will be made via wire transfer only. This is urgent, start today with no exceptions.', null, 2000.00, 3000.00, 'USD', 'screening', 'screened_flagged', '["suspicious_payment_terms", "urgency_pressure_language"]', '11111111-1111-1111-1111-111111111131', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222295', '22222222-2222-2222-2222-222222222221', '22222222-2222-2222-2222-222222222292', '22222222-2222-2222-2222-222222222293', 'Data Warehouse Modernization', 'Migrate a legacy on-prem warehouse to a dbt-modeled PostgreSQL platform with row-level security.', 'Must preserve 7 years of historical transaction data with a documented migration/rollback plan.', 55000.00, 90000.00, 'USD', 'qualified', 'screened_clear', null, '22222222-2222-2222-2222-222222222241', now(), now(), 1, false),
+  ('22222222-2222-2222-2222-222222222296', '22222222-2222-2222-2222-222222222221', null, '22222222-2222-2222-2222-222222222297', 'Pay Upfront Before Work Begins', 'This client requires you to pay upfront before work begins on the contract.', null, null, null, null, 'screening', 'screened_flagged', '["suspicious_payment_terms"]', '22222222-2222-2222-2222-222222222241', now(), now(), 1, false);
+
 commit;

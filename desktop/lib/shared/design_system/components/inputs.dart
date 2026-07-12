@@ -13,6 +13,7 @@ class RevnaraTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.onChanged,
+    this.maxLines = 1,
   });
 
   final String label;
@@ -21,6 +22,7 @@ class RevnaraTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,7 @@ class RevnaraTextField extends StatelessWidget {
         obscureText: obscureText,
         keyboardType: keyboardType,
         onChanged: onChanged,
+        maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
           errorText: errorText,

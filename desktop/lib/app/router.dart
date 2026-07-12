@@ -8,6 +8,9 @@ import '../features/command_center/command_center_screen.dart';
 import '../features/company/company_profile_screen.dart';
 import '../features/company/team_portfolio_screen.dart';
 import '../features/onboarding/create_organization_screen.dart';
+import '../features/opportunities/opportunity_detail_screen.dart';
+import '../features/opportunities/opportunity_intake_screen.dart';
+import '../features/opportunities/opportunity_list_screen.dart';
 import '../features/settings/login_screen.dart';
 import '../features/settings/team_management_screen.dart';
 import '../shared/dev/component_gallery.dart';
@@ -116,6 +119,34 @@ final routerProvider = Provider<GoRouter>((ref) {
           state: state,
           child: const TeamPortfolioScreen(),
         ),
+      ),
+      GoRoute(
+        path: '/opportunities',
+        pageBuilder: (context, state) => revnaraPageTransition(
+          key: state.pageKey,
+          state: state,
+          child: const OpportunityListScreen(),
+        ),
+        routes: [
+          GoRoute(
+            path: 'new',
+            pageBuilder: (context, state) => revnaraPageTransition(
+              key: state.pageKey,
+              state: state,
+              child: const OpportunityIntakeScreen(),
+            ),
+          ),
+          GoRoute(
+            path: ':opportunityId',
+            pageBuilder: (context, state) => revnaraPageTransition(
+              key: state.pageKey,
+              state: state,
+              child: OpportunityDetailScreen(
+                opportunityId: state.pathParameters['opportunityId']!,
+              ),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/dev/gallery',
