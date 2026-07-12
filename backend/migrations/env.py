@@ -26,6 +26,7 @@ config.set_main_option("sqlalchemy.url", get_settings().database_url)
 # autogenerate/`alembic check` diff against it -- a model that isn't
 # imported here is invisible to Alembic regardless of whether the file
 # exists.
+from app.agents import models as _agents_models  # noqa: E402, F401
 from app.audit import models as _audit_models  # noqa: E402, F401
 from app.company import models as _company_models  # noqa: E402, F401
 from app.database import Base  # noqa: E402

@@ -1,0 +1,35 @@
+# Sprint 8 (DQ8.2) config stub for the agent-worker Cloud Run service.
+# Shares the backend's one Docker image (backend/Dockerfile) with every
+# other service -- only the container command differs. See
+# document-worker.yaml for the "not deployed yet" note that applies here
+# too.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: revnara-agent-worker
+spec:
+  template:
+    spec:
+      containers:
+        - image: IMAGE_PLACEHOLDER # same image as revnara-api
+          command: ["python", "-m", "workers.agent_worker.main"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: revnara-database-url
+                  key: latest
+            - name: MODEL_PROVIDER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: revnara-model-provider-api-key
+                  key: latest
+            - name: MODEL_PROVIDER_FALLBACK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: revnara-model-provider-fallback-api-key
+                  key: latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi

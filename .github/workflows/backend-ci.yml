@@ -41,6 +41,18 @@ jobs:
       - name: Mypy type check
         run: mypy app
 
+      - name: Model gateway is the only path that calls a model provider (BE8 DoD)
+        run: |
+          # app/files/storage.py and app/rag/embeddings.py have their own
+          # pre-Sprint-8 httpx use (Supabase Storage, the embeddings API --
+          # neither is a chat/completion model-provider call) -- excluded
+          # deliberately, not because this check is loose.
+          if grep -rn "^import httpx\|^from httpx" app --include="*.py" \
+              | grep -v "^app/model_gateway/providers/\|^app/files/storage.py\|^app/rag/embeddings.py"; then
+            echo "A module outside app/model_gateway/providers/ imports httpx directly -- model calls must go through app/model_gateway/gateway.py."
+            exit 1
+          fi
+
       - name: Run tests
         run: pytest --tb=short
 
@@ -146,7 +158,7 @@ jobs:
 
       - name: Apply every RLS policy file as the app role
         run: |
-          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events skills team_members team_member_skills portfolio_items case_studies files knowledge_chunks clients contacts opportunity_sources opportunities qualification_results team_match_results explainability_records override_records; do
+          for f in 00_functions organizations users workspaces roles permissions role_permissions organization_members audit_events skills team_members team_member_skills portfolio_items case_studies files knowledge_chunks clients contacts opportunity_sources opportunities qualification_results team_match_results explainability_records override_records agent_runs tool_actions; do
             psql -h localhost -U revnara_app -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/rls/${f}.sql"
           done
 
@@ -158,6 +170,10 @@ jobs:
       - name: Provision RAG queues as the superuser role
         run: |
           psql -h localhost -U postgres -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/config/rag_queues.sql"
+
+      - name: Provision the agent_tasks queue as the superuser role
+        run: |
+          psql -h localhost -U postgres -d revnara_rls_test -v ON_ERROR_STOP=1 -f "../supabase/config/agent_queues.sql"
 
       - name: Confirm every tenant-scoped table actually has RLS enabled
         run: |
@@ -185,6 +201,9 @@ jobs:
 
       - name: Run the real RAG test suite (pgvector + pgmq)
         run: pytest tests/rag -v
+
+      - name: Run the real agent runtime test suite (pgmq worker reliability)
+        run: pytest tests/agents -v
 
   docker-build:
     runs-on: ubuntu-latest
