@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../api/api_client.dart';
 import '../../shared/design_system/design_system.dart';
@@ -97,16 +96,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Company profile'),
-        actions: [
-          IconButton(
-            tooltip: 'Team & portfolio',
-            icon: const Icon(Icons.workspaces_outlined),
-            onPressed: () => context.go('/company/brain'),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Company profile')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null

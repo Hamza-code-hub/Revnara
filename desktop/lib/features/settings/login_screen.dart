@@ -25,7 +25,8 @@ class LoginScreen extends StatelessWidget {
                 icon: Icons.cloud_off,
                 title: 'Supabase is not configured',
                 message:
-                    'Run with --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... '
+                    'Create desktop/dart_define.local.json (see the .example file next to it) '
+                    'or run with --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... '
                     'to enable sign-in (see docs/Revnara_Sprint_Development_Plan.md §4).',
               ),
               // Debug-only, one-click way to see the design system without
@@ -57,10 +58,10 @@ class LoginScreen extends StatelessWidget {
 
 /// The actual sign-in form, split out from [LoginScreen] so it's testable
 /// directly (test/widget/settings/login_form_test.dart) without the
-/// compile-time `isSupabaseConfigured` gate above it -- that flag is
-/// always false under `flutter test` since dart-defines aren't set there,
-/// which would otherwise make the form's validation logic unreachable in
-/// any normal test run.
+/// `isSupabaseConfigured` gate above it -- that flag stays false under
+/// `flutter test` since main() (the only place that ever sets it true)
+/// never runs there, which would otherwise make the form's validation
+/// logic unreachable in any normal test run.
 class LoginForm extends ConsumerStatefulWidget {
   const LoginForm({super.key});
 

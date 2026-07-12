@@ -1,13 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Mirrors main.dart's dart-define check -- exposed here so any screen can
-/// show a clear "not configured" state instead of a cryptic Supabase
-/// internal error when SUPABASE_URL/SUPABASE_ANON_KEY weren't supplied at
-/// build/run time (e.g. someone running just `flutter run` for
-/// `/dev/gallery` work without setting up a Supabase project yet).
-const bool isSupabaseConfigured =
-    bool.hasEnvironment('SUPABASE_URL') && bool.hasEnvironment('SUPABASE_ANON_KEY');
+/// Set by main.dart immediately after a successful `Supabase.initialize()`
+/// call -- exposed here so any screen can show a clear "not configured"
+/// state instead of a cryptic Supabase internal error when neither a
+/// --dart-define nor the dart_define.local.json fallback provided real
+/// credentials (e.g. someone running just `flutter run` for `/dev/gallery`
+/// work without setting up a Supabase project yet).
+///
+/// Deliberately NOT a compile-time `bool.hasEnvironment` check anymore --
+/// that only detected --dart-define, so it stayed false (showing the
+/// "not configured" screen) even after main.dart's runtime fallback had
+/// already initialized Supabase successfully from dart_define.local.json,
+/// a real bug caught by actually running `flutter run -d windows` with no
+/// flags and watching the screen it produced, not just checking the logs.
+/// Stays false under `flutter test` (main() never runs there), so
+/// LoginForm's own tests are unaffected -- see its docstring.
+bool isSupabaseConfigured = false;
 
 /// Wraps the Supabase Flutter SDK's auth session (FE2.1). Session
 /// persistence/secure storage is handled by supabase_flutter itself --

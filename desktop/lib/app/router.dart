@@ -15,6 +15,7 @@ import '../features/settings/login_screen.dart';
 import '../features/settings/team_management_screen.dart';
 import '../shared/dev/component_gallery.dart';
 import '../shared/motion/transitions.dart';
+import 'app_shell.dart';
 
 /// Notifies GoRouter to re-evaluate `redirect` whenever auth or membership
 /// state changes -- without this, GoRouter only re-runs redirect on
@@ -88,65 +89,74 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const CreateOrganizationScreen(),
         ),
       ),
-      GoRoute(
-        path: '/command-center',
-        pageBuilder: (context, state) => revnaraPageTransition(
-          key: state.pageKey,
-          state: state,
-          child: const CommandCenterScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/settings/team',
-        pageBuilder: (context, state) => revnaraPageTransition(
-          key: state.pageKey,
-          state: state,
-          child: const TeamManagementScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/company/profile',
-        pageBuilder: (context, state) => revnaraPageTransition(
-          key: state.pageKey,
-          state: state,
-          child: const CompanyProfileScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/company/brain',
-        pageBuilder: (context, state) => revnaraPageTransition(
-          key: state.pageKey,
-          state: state,
-          child: const TeamPortfolioScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/opportunities',
-        pageBuilder: (context, state) => revnaraPageTransition(
-          key: state.pageKey,
-          state: state,
-          child: const OpportunityListScreen(),
-        ),
+      // FE-wide navigation shell (sidebar) -- wraps every top-level
+      // authenticated screen. Focused sub-flows (opportunity create/
+      // detail, below) deliberately stay outside it -- full-screen, no
+      // persistent sidebar, the same reasoning app_shell.dart's docstring
+      // explains.
+      ShellRoute(
+        builder: (context, state, child) =>
+            AppShell(location: state.uri.toString(), child: child),
         routes: [
           GoRoute(
-            path: 'new',
+            path: '/command-center',
             pageBuilder: (context, state) => revnaraPageTransition(
               key: state.pageKey,
               state: state,
-              child: const OpportunityIntakeScreen(),
+              child: const CommandCenterScreen(),
             ),
           ),
           GoRoute(
-            path: ':opportunityId',
+            path: '/settings/team',
             pageBuilder: (context, state) => revnaraPageTransition(
               key: state.pageKey,
               state: state,
-              child: OpportunityDetailScreen(
-                opportunityId: state.pathParameters['opportunityId']!,
-              ),
+              child: const TeamManagementScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/company/profile',
+            pageBuilder: (context, state) => revnaraPageTransition(
+              key: state.pageKey,
+              state: state,
+              child: const CompanyProfileScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/company/brain',
+            pageBuilder: (context, state) => revnaraPageTransition(
+              key: state.pageKey,
+              state: state,
+              child: const TeamPortfolioScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/opportunities',
+            pageBuilder: (context, state) => revnaraPageTransition(
+              key: state.pageKey,
+              state: state,
+              child: const OpportunityListScreen(),
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/opportunities/new',
+        pageBuilder: (context, state) => revnaraPageTransition(
+          key: state.pageKey,
+          state: state,
+          child: const OpportunityIntakeScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/opportunities/:opportunityId',
+        pageBuilder: (context, state) => revnaraPageTransition(
+          key: state.pageKey,
+          state: state,
+          child: OpportunityDetailScreen(
+            opportunityId: state.pathParameters['opportunityId']!,
+          ),
+        ),
       ),
       GoRoute(
         path: '/dev/gallery',
